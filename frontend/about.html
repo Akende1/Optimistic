@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us — Optimistic</title>
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/layout.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <link rel="stylesheet" href="/static/css/mobile.css">
+    <link rel="stylesheet" href="/static/css/responsive.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="nav-logo">Optimistic</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="products.html">Products</a></li>
+                <li><a href="about.html" style="color: var(--primary-color);">About</a></li>
+                <li><a href="contact.html">Contact</a></li>
+                <li id="dashboard-nav" style="display: none;"><a href="buyer-dashboard.html" id="dashboard-link">📊 Dashboard</a></li>
+                <li><a href="wishlist.html">❤️ Wishlist</a></li>
+                <li><a href="cart.html">🛒 Cart <span class="cart-badge" id="cart-count">0</span></a></li>
+                <li><a href="login.html" id="auth-link">Login</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" style="padding: 4rem 0;">
+        <div class="container">
+            <h1>About Optimistic</h1>
+            <p>Zambia's Premier Online Marketplace</p>
+        </div>
+    </section>
+
+    <!-- Content Section -->
+    <section class="section">
+        <div class="container" style="max-width: 900px;">
+            <div class="card" style="margin-bottom: 3rem;">
+                <h2 style="margin-bottom: 1.5rem;">🇿🇲 Our Mission</h2>
+                <p style="font-size: 1.125rem; line-height: 1.8; color: var(--text-medium);">
+                    Optimistic was created to empower Zambian businesses and connect buyers with quality products from trusted local sellers. 
+                    We believe in building a digital marketplace that serves our community, promotes local commerce, and makes online 
+                    shopping accessible to everyone in Zambia.
+                </p>
+            </div>
+
+            <div class="card" style="margin-bottom: 3rem;">
+                <h2 style="margin-bottom: 1.5rem;">✨ Why Choose Optimistic?</h2>
+                <div style="display: grid; gap: 2rem; margin-top: 2rem;">
+                    <div style="display: flex; gap: 1.5rem; align-items: start;">
+                        <div style="font-size: 3rem; flex-shrink: 0;">🛡️</div>
+                        <div>
+                            <h3>Verified Sellers</h3>
+                            <p style="color: var(--text-medium); margin: 0;">All sellers are verified to ensure quality and trust</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1.5rem; align-items: start;">
+                        <div style="font-size: 3rem; flex-shrink: 0;">💳</div>
+                        <div>
+                            <h3>Secure Payments</h3>
+                            <p style="color: var(--text-medium); margin: 0;">Multiple payment options including mobile money and cash on delivery</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1.5rem; align-items: start;">
+                        <div style="font-size: 3rem; flex-shrink: 0;">🚚</div>
+                        <div>
+                            <h3>Reliable Delivery</h3>
+                            <p style="color: var(--text-medium); margin: 0;">Fast and reliable delivery across Zambia</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1.5rem; align-items: start;">
+                        <div style="font-size: 3rem; flex-shrink: 0;">🤝</div>
+                        <div>
+                            <h3>Customer Support</h3>
+                            <p style="color: var(--text-medium); margin: 0;">Dedicated support team ready to help</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 style="margin-bottom: 1.5rem;">📈 Join Us</h2>
+                <p style="font-size: 1.125rem; line-height: 1.8; color: var(--text-medium); margin-bottom: 2rem;">
+                    Whether you're a buyer looking for quality products or a seller wanting to reach more customers, 
+                    Optimistic is the platform for you. Join thousands of Zambians who trust Optimistic for their online shopping needs.
+                </p>
+                <div style="display: flex; gap: 1rem;">
+                    <a href="register.html" class="btn btn-primary">Start Selling</a>
+                    <a href="products.html" class="btn btn-secondary">Browse Products</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 Optimistic · Proudly Built for Zambia 🇿🇲</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/api.js"></script>
+    <script>
+        function updateNav() {
+            const authLink = document.getElementById('auth-link');
+            const dashboardLink = document.getElementById('dashboard-link');
+            const dashboardNav = document.getElementById('dashboard-nav');
+            const cartCount = document.getElementById('cart-count');
+            
+            if (api.isAuthenticated()) {
+                authLink.textContent = 'Logout';
+                authLink.href = '#';
+                authLink.onclick = (e) => { e.preventDefault(); api.logout(); };
+                dashboardNav.style.display = 'block';
+                dashboardLink.href = 'buyer-dashboard.html'; // Default
+                api.getProfile().then(user => {
+                    dashboardLink.href = user.role === 'ADMIN' ? 'admin-dashboard.html' : user.role === 'SELLER' ? 'seller-dashboard.html' : 'buyer-dashboard.html';
+                }).catch(() => {});
+            } else {
+                dashboardNav.style.display = 'none';
+            }
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            cartCount.textContent = cart.length;
+        }
+        document.addEventListener('DOMContentLoaded', updateNav);
+    </script>
+    </footer>
+</body>
+</html>

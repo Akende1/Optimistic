@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>Dispute Resolution — Optimistic</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace; background: #0a0a0a; color: #e0e0e0; }
+        nav { background: #111; border-bottom: 1px solid #333; padding: 1rem 0; }
+        nav .nav-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 2rem; }
+        nav .brand { font-weight: 700; font-size: 1.2rem; color: #ff3b30; letter-spacing: 1px; }
+        nav .nav-links { display: flex; gap: 2rem; list-style: none; }
+        nav .nav-links a { text-decoration: none; color: #888; font-weight: 500; font-size: 0.9rem; transition: color 0.2s; }
+        nav .nav-links a:hover { color: #ff3b30; }
+        nav .nav-links a.active { color: #ff3b30; border-bottom: 2px solid #ff3b30; padding-bottom: 0.25rem; }
+        
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        .header { margin-bottom: 2rem; }
+        .header h1 { font-size: 1.75rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; }
+        .header p { color: #666; font-size: 0.95rem; }
+        
+        .dispute-card { background: #151515; border: 1px solid #222; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; border-left: 3px solid #ff3b30; }
+        .dispute-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .dispute-id { font-size: 1.2rem; font-weight: 700; color: #fff; }
+        .dispute-status { padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; }
+        .status-open { background: #3a1a1a; color: #ff3b30; }
+        .status-resolved { background: #1a3a1a; color: #34c759; }
+        
+        .dispute-details { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem; padding: 1rem 0; border-top: 1px solid #222; border-bottom: 1px solid #222; }
+        .detail-label { font-size: 0.8rem; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        .detail-value { font-size: 0.95rem; color: #fff; margin-top: 0.25rem; }
+        
+        .actions { display: flex; gap: 1rem; }
+        .btn { padding: 0.75rem 1.5rem; border-radius: 6px; font-size: 0.9rem; cursor: pointer; border: none; transition: all 0.2s; font-weight: 600; }
+        .btn-resolve { background: #34c759; color: #000; }
+        .btn-resolve:hover { opacity: 0.9; }
+        .btn-view { background: #1a1a1a; color: #888; }
+        .btn-view:hover { background: #222; color: #fff; }
+        
+        .warning { background: #3a1a1a; border: 1px solid #ff3b30; padding: 1rem; border-radius: 6px; color: #ff3b30; margin-bottom: 2rem; font-size: 0.9rem; }
+        .loading { text-align: center; padding: 4rem; color: #666; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-content">
+            <div class="brand">⚡ SYSTEM CONTROL</div>
+            <ul class="nav-links">
+                <li><a href="admin-dashboard-v2.html">Dashboard</a></li>
+                <li><a href="admin-users-v2.html">Users</a></li>
+                <li><a href="admin-products-v2.html">Products</a></li>
+                <li><a href="admin-orders-v2.html">Orders</a></li>
+                <li><a href="admin-disputes-v2.html" class="active">Disputes</a></li>
+                <li><a href="admin-finances-v2.html">Finances</a></li>
+                <li><a href="admin-reports-v2.html">Reports</a></li>
+                <li><a href="#" onclick="api.logout()" style="color: #ff3b30;">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1>Dispute Resolution</h1>
+            <p>Final authority — decisions are permanent</p>
+        </div>
+
+        <div class="warning">
+            ⚠️ <strong>Resolution Protocol:</strong> Decisions are irreversible. Financial actions execute automatically. Evidence cannot be edited. Treat this like a courtroom bench.
+        </div>
+
+        <div id="loading" class="loading">Loading disputes...</div>
+
+        <div id="disputes-list" style="display: none;"></div>
+    </div>
+
+    <script src="/static/js/api.js?v=20260129d"></script>
+    <script src="/static/js/role-guard.js?v=20260129"></script>
+    <script>
+        async function loadDisputes() {
+            const loading = document.getElementById('loading');
+            const disputesList = document.getElementById('disputes-list');
+
+            try {
+                // Check admin access
+                const hasAccess = await RoleGuard.requireAnyRole('ADMIN', 'SUPER_ADMIN');
+                if (!hasAccess) return;
+
+                // Fetch disputes
+                const data = await api.getDisputes();
+                const disputes = data.results || data;
+
+                if (disputes.length === 0) {
+                    loading.textContent = 'No disputes found';
+                    return;
+                }
+
+                // Render disputes
+                disputesList.innerHTML = disputes.map(dispute => `
+                    <div class="dispute-card">
+                        <div class="dispute-header">
+                            <div class="dispute-id">Dispute #${dispute.id} — ${dispute.target_type || 'Unknown'} #${dispute.target_id || 'N/A'}</div>
+                            <span class="dispute-status status-${dispute.status.toLowerCase().replace('_', '-')}">${dispute.status_display}</span>
+                        </div>
+                        
+                        <div class="dispute-details">
+                            <div>
+                                <div class="detail-label">Opened By</div>
+                                <div class="detail-value">${dispute.opened_by.username} (${dispute.opened_by.role})</div>
+                            </div>
+                            <div>
+                                <div class="detail-label">Reason</div>
+                                <div class="detail-value">${dispute.reason_display}</div>
+                            </div>
+                            <div>
+                                <div class="detail-label">Created</div>
+                                <div class="detail-value">${new Date(dispute.created_at).toLocaleDateString()}</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: 1rem; color: #888;">
+                            ${dispute.description}
+                        </div>
+                        
+                        ${dispute.resolution_notes ? `
+                            <div style="margin-bottom: 1rem; padding: 1rem; background: #1a1a1a; border-radius: 6px;">
+                                <div style="font-size: 0.8rem; color: #666; margin-bottom: 0.5rem;">RESOLUTION</div>
+                                <div style="color: #fff;">${dispute.resolution_notes}</div>
+                                ${dispute.outcome ? `<div style="margin-top: 0.5rem; color: #34c759;">Outcome: ${dispute.outcome}</div>` : ''}
+                            </div>
+                        ` : ''}
+                        
+                        <div class="actions">
+                            ${dispute.status !== 'CLOSED' && dispute.status !== 'RESOLVED' ? `
+                                <button class="btn btn-resolve" onclick="resolveDispute(${dispute.id})">Resolve</button>
+                            ` : ''}
+                            ${dispute.status === 'RESOLVED' ? `
+                                <button class="btn btn-resolve" onclick="closeDispute(${dispute.id})">Close Permanently</button>
+                            ` : ''}
+                            <button class="btn btn-view" onclick="viewDisputeDetail(${dispute.id})">View Full Details</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                loading.style.display = 'none';
+                disputesList.style.display = 'block';
+                
+            } catch (err) {
+                console.error('Error loading disputes:', err);
+                loading.textContent = 'Failed to load disputes: ' + err.message;
+            }
+        }
+
+        async function resolveDispute(disputeId) {
+            const outcome = prompt('Enter outcome (BUYER_FAVOR, SELLER_FAVOR, PARTIAL_BUYER, PARTIAL_SELLER, NO_FAULT, COURIER_FAULT):');
+            if (!outcome) return;
+
+            const notes = prompt('Resolution notes (required):');
+            if (!notes) {
+                alert('Resolution notes are required');
+                return;
+            }
+
+            if (!confirm('Confirm resolution? This action is final.')) {
+                return;
+            }
+
+            try {
+                await api.resolveDispute(disputeId, outcome, notes);
+                alert('Dispute resolved successfully');
+                await loadDisputes();
+            } catch (err) {
+                console.error('Resolution error:', err);
+                alert('Failed to resolve dispute: ' + err.message);
+            }
+        }
+
+        async function closeDispute(disputeId) {
+            if (!confirm('Close this dispute permanently? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                await api.closeDispute(disputeId);
+                alert('Dispute closed successfully');
+                await loadDisputes();
+            } catch (err) {
+                console.error('Close error:', err);
+                alert('Failed to close dispute: ' + err.message);
+            }
+        }
+
+        function viewDisputeDetail(disputeId) {
+            alert('Dispute detail view coming soon! Dispute ID: ' + disputeId);
+        }
+
+        document.addEventListener('DOMContentLoaded', loadDisputes);
+    </script>
+</body>
+</html>

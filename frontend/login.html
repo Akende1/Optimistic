@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — Optimistic</title>
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/layout.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <link rel="stylesheet" href="/static/css/mobile.css">
+    <link rel="stylesheet" href="/static/css/responsive.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="nav-logo">Optimistic</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="products.html">Products</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Login Form -->
+    <section class="section">
+        <div class="container" style="max-width: 500px;">
+            <h1 class="text-center">Login to Optimistic</h1>
+            
+            <div id="message"></div>
+
+            <div class="card">
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        Login
+                    </button>
+                </form>
+
+                <p class="text-center mt-3">
+                    Don't have an account? <a href="register.html" style="color: var(--primary-color);">Register</a>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Optimistic. Built for Zambia.</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/api.js"></script>
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const messageDiv = document.getElementById('message');
+
+            try {
+                const data = await api.login(username, password);
+                messageDiv.innerHTML = '<div class="alert alert-success">Login successful! Redirecting...</div>';
+                
+                // Get user profile to determine dashboard
+                try {
+                    const user = await api.getProfile();
+                    console.log('Login - User profile:', user);
+                    console.log('Login - User role:', user.role);
+                    console.log('Login - Is superuser:', user.is_superuser);
+                    
+                    // Use backend-provided redirect URL or fallback to role-based logic
+                    let redirectUrl = data.redirect || 'index.html';
+                    
+                    if (!data.redirect) {
+                        // Fallback logic if redirect not provided
+                        if (user.is_superuser) {
+                            redirectUrl = 'super-admin-dashboard.html';
+                        } else if (user.role === 'ADMIN') {
+                            redirectUrl = 'admin-dashboard-v2.html';
+                        } else if (user.role === 'SELLER') {
+                            redirectUrl = 'seller-dashboard-v2.html';
+                        } else if (user.role === 'BUYER') {
+                            redirectUrl = 'buyer-dashboard.html';
+                        } else if (user.role === 'COURIER') {
+                            redirectUrl = 'courier-dashboard.html';
+                        }
+                    }
+                    
+                    console.log('Final redirect URL:', redirectUrl);
+                    setTimeout(() => {
+                        window.location.href = redirectUrl;
+                    }, 1000);
+                } catch (profileError) {
+                    // Fallback to homepage if profile fetch fails
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                }
+            } catch (error) {
+                messageDiv.innerHTML = `<div class="alert alert-error">Login failed: ${error.message}</div>`;
+            }
+        });
+    </script>
+</body>
+</html>

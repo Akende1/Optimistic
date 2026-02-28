@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seller Dashboard — Optimistic</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6a11cb;
+            --secondary: #2575fc;
+            --light: #f8f7ff;
+            --dark: #1a1a2e;
+            --success: #28a745;
+            --warning: #ff9500;
+            --danger: #ff4757;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #fff;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 15px rgba(106, 17, 203, 0.2);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .logo i {
+            margin-right: 10px;
+        }
+
+        /* Navigation */
+        nav {
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 0;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+            background: rgba(106, 17, 203, 0.05);
+        }
+
+        .nav-links a.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: rgba(106, 17, 203, 0.05);
+        }
+
+        .nav-links a.logout {
+            color: var(--danger);
+        }
+
+        .nav-links a.logout:hover {
+            background: rgba(255, 71, 87, 0.1);
+        }
+
+        /* Dashboard Container */
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .page-header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(106, 17, 203, 0.08);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid #f0f0f0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--primary), var(--secondary));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(106, 17, 203, 0.15);
+        }
+
+        .metric-card:hover::before {
+            opacity: 1;
+        }
+
+        .metric-card.success::before {
+            background: linear-gradient(to bottom, #28a745, #20c997);
+        }
+
+        .metric-card.warning::before {
+            background: linear-gradient(to bottom, #ff9500, #ffc107);
+        }
+
+        .metric-card.danger::before {
+            background: linear-gradient(to bottom, #ff4757, #ff6b81);
+        }
+
+        .metric-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .metric-value {
+            font-size: 36px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .metric-card.success .metric-value {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .metric-card.warning .metric-value {
+            background: linear-gradient(135deg, #ff9500, #ffc107);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .metric-card.danger .metric-value {
+            background: linear-gradient(135deg, #ff4757, #ff6b81);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .metric-subtitle {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .metric-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 40px;
+            opacity: 0.1;
+        }
+
+        /* Loading & Error States */
+        .loading, .error-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .loading {
+            color: var(--primary);
+            font-size: 18px;
+        }
+
+        .loading i {
+            font-size: 48px;
+            margin-bottom: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .error-state {
+            color: var(--danger);
+        }
+
+        .error-state i {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                flex-wrap: wrap;
+            }
+
+            .nav-links a {
+                font-size: 12px;
+                padding: 12px 10px;
+            }
+
+            .page-header h1 {
+                font-size: 24px;
+            }
+
+            .metric-value {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-store"></i>
+                Seller Center
+            </div>
+            <div style="color: white; font-size: 14px;" id="storeNameDisplay"></div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-content">
+            <ul class="nav-links">
+                <li><a href="seller-dashboard-v2.html" class="active"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="seller-products-v2.html"><i class="fas fa-box"></i> Products</a></li>
+                <li><a href="add-product.html"><i class="fas fa-plus-circle"></i> Add Product</a></li>
+                <li><a href="seller-orders-v2.html"><i class="fas fa-shopping-cart"></i> Orders</a></li>
+                <li><a href="seller-store-v2.html"><i class="fas fa-store-alt"></i> Store</a></li>
+                <li><a href="seller-earnings-v2.html"><i class="fas fa-dollar-sign"></i> Earnings</a></li>
+                <li><a href="seller-disputes-v2.html"><i class="fas fa-balance-scale"></i> Disputes</a></li>
+                <li><a href="seller-profile-v2.html"><i class="fas fa-user-circle"></i> Profile</a></li>
+                <li><a href="#" onclick="api.logout()" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Dashboard Container -->
+    <div class="dashboard-container">
+        <div class="page-header">
+            <h1>Dashboard Overview</h1>
+            <p>Monitor your business performance and take action on key metrics</p>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading" class="loading">
+            <i class="fas fa-spinner"></i>
+            <p>Loading your dashboard...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error" class="error-state" style="display: none;">
+            <i class="fas fa-exclamation-circle"></i>
+            <p id="error-message"></p>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div id="metrics" style="display: none;">
+            <div class="metrics-grid">
+                <!-- TODAY'S SALES -->
+                <div class="metric-card success" onclick="location.href='seller-earnings-v2.html'">
+                    <i class="fas fa-dollar-sign metric-icon"></i>
+                    <div class="metric-label">Today's Sales</div>
+                    <div class="metric-value" id="today-sales">K0.00</div>
+                    <div class="metric-subtitle">Gross revenue today</div>
+                </div>
+
+                <!-- TOTAL PRODUCTS -->
+                <div class="metric-card" onclick="location.href='seller-products-v2.html'">
+                    <i class="fas fa-box metric-icon"></i>
+                    <div class="metric-label">Total Products</div>
+                    <div class="metric-value" id="total-products">0</div>
+                    <div class="metric-subtitle">Active listings</div>
+                </div>
+
+                <!-- PENDING ORDERS -->
+                <div class="metric-card warning" onclick="location.href='seller-orders-v2.html'">
+                    <i class="fas fa-clock metric-icon"></i>
+                    <div class="metric-label">Pending Orders</div>
+                    <div class="metric-value" id="pending-orders">0</div>
+                    <div class="metric-subtitle">Need fulfillment</div>
+                </div>
+
+                <!-- IN TRANSIT -->
+                <div class="metric-card" onclick="location.href='seller-orders-v2.html'">
+                    <i class="fas fa-shipping-fast metric-icon"></i>
+                    <div class="metric-label">In Transit</div>
+                    <div class="metric-value" id="in-transit">0</div>
+                    <div class="metric-subtitle">Out for delivery</div>
+                </div>
+
+                <!-- DELIVERED -->
+                <div class="metric-card success" onclick="location.href='seller-orders-v2.html'">
+                    <i class="fas fa-check-circle metric-icon"></i>
+                    <div class="metric-label">Delivered</div>
+                    <div class="metric-value" id="delivered">0</div>
+                    <div class="metric-subtitle">Completed orders</div>
+                </div>
+
+                <!-- PENDING ESCROW -->
+                <div class="metric-card" onclick="location.href='seller-earnings-v2.html'">
+                    <i class="fas fa-hourglass-half metric-icon"></i>
+                    <div class="metric-label">Pending Escrow</div>
+                    <div class="metric-value" id="pending-escrow">K0.00</div>
+                    <div class="metric-subtitle">Awaiting delivery confirmation</div>
+                </div>
+
+                <!-- AVAILABLE ESCROW -->
+                <div class="metric-card success" onclick="location.href='seller-earnings-v2.html'">
+                    <i class="fas fa-wallet metric-icon"></i>
+                    <div class="metric-label">Available Balance</div>
+                    <div class="metric-value" id="available-escrow">K0.00</div>
+                    <div class="metric-subtitle">Ready for payout</div>
+                </div>
+
+                <!-- ACTIVE DISPUTES -->
+                <div class="metric-card danger" onclick="location.href='seller-disputes-v2.html'" id="disputes-card">
+                    <i class="fas fa-exclamation-triangle metric-icon"></i>
+                    <div class="metric-label">Active Disputes</div>
+                    <div class="metric-value" id="disputes">0</div>
+                    <div class="metric-subtitle">Require attention</div>
+                </div>
+
+                <!-- LOW STOCK ALERTS -->
+                <div class="metric-card danger" onclick="location.href='seller-products-v2.html'" id="stock-card">
+                    <i class="fas fa-box-open metric-icon"></i>
+                    <div class="metric-label">Low Stock</div>
+                    <div class="metric-value" id="low-stock">0</div>
+                    <div class="metric-subtitle">Products need restocking</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js?v=20260116"></script>
+    <script>
+        async function loadDashboard() {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const errorMessage = document.getElementById('error-message');
+            const metrics = document.getElementById('metrics');
+
+            try {
+                // Check if API loaded
+                if (typeof ZuStoreAPI === 'undefined') {
+                    throw new Error('API script failed to load');
+                }
+                
+                const api = new ZuStoreAPI();
+                
+                // Check authentication
+                if (!api.isAuthenticated()) {
+                    location.href = 'login.html';
+                    return;
+                }
+
+                console.log('Loading seller dashboard...');
+
+                // Get seller info first
+                const sellerInfo = await api.getSellerProfile();
+                if (sellerInfo && sellerInfo.store_name) {
+                    document.getElementById('storeNameDisplay').textContent = `Welcome, ${sellerInfo.store_name}`;
+                }
+
+                // Fetch analytics and products in parallel
+                const [analytics, productsResponse] = await Promise.all([
+                    api.getSellerAnalytics(),
+                    api.request('/products/')
+                ]);
+
+                console.log('Analytics:', analytics);
+                console.log('Products:', productsResponse);
+
+                // Update metrics with actual data
+                document.getElementById('today-sales').textContent = `K${analytics.revenue.total.toFixed(2)}`;
+                document.getElementById('pending-orders').textContent = (analytics.orders.pending || 0) + (analytics.orders.paid || 0);
+                document.getElementById('in-transit').textContent = analytics.orders.in_transit || 0;
+                document.getElementById('delivered').textContent = analytics.orders.delivered || 0;
+                
+                // Products count
+                const productList = productsResponse.results || [];
+                const activeProducts = productList.filter(p => p.status === 'ACTIVE');
+                document.getElementById('total-products').textContent = activeProducts.length;
+                
+                // Escrow (placeholder - backend doesn't return this yet)
+                document.getElementById('pending-escrow').textContent = 'K0.00';
+                document.getElementById('available-escrow').textContent = 'K0.00';
+                
+                // Disputes (placeholder)
+                document.getElementById('disputes').textContent = '0';
+                
+                // Low stock - products with stock between 1-9
+                const lowStockCount = productList.filter(p => p.stock > 0 && p.stock < 10).length;
+                document.getElementById('low-stock').textContent = lowStockCount;
+
+                // Hide alert cards if zero
+                if (lowStockCount === 0) {
+                    document.getElementById('stock-card').style.display = 'none';
+                }
+
+                // Show metrics, hide loading
+                loading.style.display = 'none';
+                metrics.style.display = 'block';
+                
+                console.log('Dashboard loaded successfully!');
+
+            } catch (err) {
+                console.error('Dashboard load error:', err);
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                errorMessage.textContent = 'Failed to load dashboard: ' + (err.message || 'Unknown error');
+            }
+        }
+
+        // Run when page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadDashboard);
+        } else {
+            loadDashboard();
+        }
+    </script>
+</body>
+</html>

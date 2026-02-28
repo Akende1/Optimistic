@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart — Optimistic</title>
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/layout.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <link rel="stylesheet" href="/static/css/mobile.css">
+    <link rel="stylesheet" href="/static/css/responsive.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="nav-logo">Optimistic</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="products.html">Products</a></li>
+                <li><a href="cart.html">🛒 Cart</a></li>
+                <li><a href="#" id="auth-link">Login</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Cart Section -->
+    <section class="section">
+        <div class="container">
+            <h1 class="section-title">🛒 Shopping Cart</h1>
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 3rem;">
+                <div>
+                    <div id="cart-items">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="card" style="position: sticky; top: 100px;">
+                        <h3 style="margin-bottom: 1.5rem;">Order Summary</h3>
+                        <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span>Subtotal:</span>
+                                <span id="subtotal">K0.00</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: var(--text-light);">
+                                <span>Delivery:</span>
+                                <span>Calculated at checkout</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 1.5rem; font-weight: 700; margin-bottom: 2rem;">
+                            <span>Total:</span>
+                            <span id="total" style="color: var(--primary-color);">K0.00</span>
+                        </div>
+                        <button class="btn btn-primary" onclick="checkout()" style="width: 100%;">
+                            Proceed to Checkout
+                        </button>
+                        <a href="products.html" style="display: block; text-align: center; margin-top: 1rem; color: var(--primary-color); font-weight: 600;">
+                            ← Continue Shopping
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 Optimistic · Proudly Built for Zambia 🇿🇲</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/api.js"></script>
+    <script>
+        let cartItems = [];
+        let products = {};
+
+        async function loadCart() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            
+            if (cart.length === 0) {
+                document.getElementById('cart-items').innerHTML = `
+                    <div class="empty-state">
+                        <h3>Your cart is empty</h3>
+                        <p>Start shopping to add items to your cart</p>
+                        <a href="products.html" class="btn btn-primary" style="margin-top: 1rem;">Browse Products</a>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                // Fetch product details for all cart items
+                const promises = cart.map(item => api.getProduct(item.id));
+                const productDetails = await Promise.all(promises);
+                
+                productDetails.forEach((product, index) => {
+                    products[product.id] = product;
+                    cart[index].product = product;
+                });
+                
+                cartItems = cart;
+                renderCart();
+                updateSummary();
+            } catch (error) {
+                console.error('Error loading cart:', error);
+                document.getElementById('cart-items').innerHTML = `
+                    <div class="alert alert-error">Failed to load cart items</div>
+                `;
+            }
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-items');
+            container.innerHTML = cartItems.map((item, index) => `
+                <div class="card" style="margin-bottom: 1.5rem; display: flex; gap: 1.5rem; align-items: center;">
+                    <div style="width: 120px; height: 120px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; font-size: 3rem; flex-shrink: 0;">
+                        📦
+                    </div>
+                    <div style="flex: 1;">
+                        <h3 style="margin-bottom: 0.5rem;">
+                            <a href="product-detail.html?id=${item.product.id}" style="color: var(--text-dark); text-decoration: none;">
+                                ${item.product.name}
+                            </a>
+                        </h3>
+                        <p style="color: var(--text-light); margin-bottom: 0.75rem;">by ${item.product.seller_name}</p>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; background: var(--bg-light); border-radius: 0.5rem; padding: 0.5rem;">
+                                <button onclick="updateQuantity(${index}, -1)" style="background: var(--bg-white); border: 1px solid var(--border-color); border-radius: 0.25rem; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 700;">−</button>
+                                <span style="min-width: 40px; text-align: center; font-weight: 600;">${item.quantity}</span>
+                                <button onclick="updateQuantity(${index}, 1)" style="background: var(--bg-white); border: 1px solid var(--border-color); border-radius: 0.25rem; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 700;">+</button>
+                            </div>
+                            <button onclick="removeItem(${index})" style="color: var(--danger-color); font-weight: 600; background: none; padding: 0.5rem 1rem;">🗑️ Remove</button>
+                        </div>
+                    </div>
+                    <div style="text-align: right; flex-shrink: 0;">
+                        <div style="font-size: 1.75rem; font-weight: 800; color: var(--primary-color);">K${(item.product.price * item.quantity).toFixed(2)}</div>
+                        <div style="color: var(--text-light); font-size: 0.875rem;">K${item.product.price} each</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateQuantity(index, delta) {
+            cartItems[index].quantity += delta;
+            
+            if (cartItems[index].quantity <= 0) {
+                removeItem(index);
+                return;
+            }
+            
+            if (cartItems[index].quantity > cartItems[index].product.stock) {
+                alert('Not enough stock available');
+                cartItems[index].quantity = cartItems[index].product.stock;
+            }
+            
+            saveCart();
+            renderCart();
+            updateSummary();
+        }
+
+        function removeItem(index) {
+            if (confirm('Remove this item from cart?')) {
+                cartItems.splice(index, 1);
+                saveCart();
+                if (cartItems.length === 0) {
+                    loadCart();
+                } else {
+                    renderCart();
+                    updateSummary();
+                }
+            }
+        }
+
+        function saveCart() {
+            const cart = cartItems.map(item => ({ id: item.id, quantity: item.quantity }));
+            localStorage.setItem('cart', JSON.stringify(cart));
+        }
+
+        function updateSummary() {
+            const subtotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+            document.getElementById('subtotal').textContent = `K${subtotal.toFixed(2)}`;
+            document.getElementById('total').textContent = `K${subtotal.toFixed(2)}`;
+        }
+
+        function checkout() {
+            if (!api.isAuthenticated()) {
+                alert('Please login to proceed to checkout');
+                window.location.href = 'login.html?redirect=checkout.html';
+                return;
+            }
+            window.location.href = 'checkout.html';
+        }
+
+        function updateAuthLink() {
+            const authLink = document.getElementById('auth-link');
+            if (api.isAuthenticated()) {
+                authLink.textContent = 'Profile';
+                authLink.href = 'profile.html';
+            } else {
+                authLink.textContent = 'Login';
+                authLink.href = 'login.html';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCart();
+            updateAuthLink();
+        });
+    </script>
+</body>
+</html>

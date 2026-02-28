@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seller Dashboard — Optimistic</title>
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/layout.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <link rel="stylesheet" href="/static/css/mobile.css">
+    <link rel="stylesheet" href="/static/css/responsive.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="seller-dashboard.html" class="nav-logo">🏪 Seller Center</a>
+            <ul class="nav-links">
+                <li><a href="seller-dashboard.html">📊 Dashboard</a></li>
+                <li><a href="seller-dashboard.html#products">📦 My Products</a></li>
+                <li><a href="seller-dashboard.html#orders">🛒 Orders</a></li>
+                <li><a href="seller-dashboard.html#analytics">📈 Analytics</a></li>
+                <li><a href="seller-dashboard.html#inventory">📋 Inventory</a></li>
+                <li><a href="add-product.html">➕ Add Product</a></li>
+                <li><a href="index.html">🏠 Store Front</a></li>
+                <li><a href="profile.html">👤 Profile</a></li>
+                <li><a href="#" onclick="api.logout()" style="color: #ef4444;">🚪 Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Dashboard Section -->
+    <section class="section">
+        <div class="container">
+            <div id="access-denied" style="display: none; text-align: center; padding: 4rem;">
+                <h2 style="color: #ef4444; margin-bottom: 1rem;">🚫 Access Denied</h2>
+                <p style="margin-bottom: 2rem;">You need a seller account to access this dashboard.</p>
+                <a href="index.html" class="btn btn-primary">Return to Home</a>
+                <a href="register.html" class="btn btn-secondary" style="margin-left: 1rem;">Become a Seller</a>
+            </div>
+            <div id="dashboard-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem;">
+                <div>
+                    <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">🏪 Seller Dashboard</h1>
+                    <p style="color: var(--text-light); margin: 0;">Manage your store and track performance</p>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <span id="connection-status" style="padding: 0.5rem 1rem; background: #10b981; color: white; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 600;">🟢 Live</span>
+                    <a href="add-product.html" class="btn btn-primary">➕ Add Product</a>
+                    <button class="btn btn-secondary" onclick="downloadReport()">📊 Download Report</button>
+                </div>
+            </div>
+
+            <!-- Verification Status -->
+            <div id="verification-banner" style="display: none; padding: 1.5rem; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white; border-radius: 0.75rem; margin-bottom: 2rem;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="font-size: 2rem;">⚠️</div>
+                    <div style="flex: 1;">
+                        <h3 style="margin: 0 0 0.5rem 0;">Verification Pending</h3>
+                        <p style="margin: 0; opacity: 0.9;">Your seller account is pending verification. Some features may be limited.</p>
+                    </div>
+                    <button class="btn" style="background: white; color: #f59e0b;" onclick="checkVerification()">Check Status</button>
+                </div>
+            </div>
+
+            <!-- Key Performance Metrics -->
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; margin-bottom: 3rem;">
+                <div class="card" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; border: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                        <div style="font-size: 3rem;">📦</div>
+                        <div class="badge badge-success" style="background: rgba(255,255,255,0.2);">Active</div>
+                    </div>
+                    <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;" id="total-products">0</div>
+                    <div style="opacity: 0.9; font-weight: 600;">Total Products</div>
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.2); font-size: 0.875rem;">
+                        <span>Active: <strong id="active-products-count">0</strong></span>
+                    </div>
+                </div>
+
+                <div class="card" style="background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%); color: white; border: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                        <div style="font-size: 3rem;">🛒</div>
+                        <div class="badge badge-success" style="background: rgba(255,255,255,0.2);">+12%</div>
+                    </div>
+                    <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;" id="total-orders">0</div>
+                    <div style="opacity: 0.9; font-weight: 600;">Total Orders</div>
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.2); font-size: 0.875rem;">
+                        <span>Pending: <strong id="pending-orders-count">0</strong></span>
+                    </div>
+                </div>
+
+                <div class="card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                        <div style="font-size: 3rem;">💰</div>
+                        <div class="badge badge-success" style="background: rgba(255,255,255,0.2);">+24%</div>
+                    </div>
+                    <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;" id="total-sales">K0</div>
+                    <div style="opacity: 0.9; font-weight: 600;">Total Sales</div>
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.2); font-size: 0.875rem;">
+                        <span>This Month: <strong id="month-sales">K0</strong></span>
+                    </div>
+                </div>
+
+                <div class="card" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); color: white; border: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                        <div style="font-size: 3rem;">⭐</div>
+                        <div class="badge badge-success" style="background: rgba(255,255,255,0.2);">Good</div>
+                    </div>
+                    <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;" id="avg-rating">0.0</div>
+                    <div style="opacity: 0.9; font-weight: 600;">Average Rating</div>
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.2); font-size: 0.875rem;">
+                        <span>Reviews: <strong id="total-reviews">0</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div id="analytics" style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-bottom: 3rem;">
+                <div class="card">
+                    <h3 style="margin-bottom: 2rem;">📈 Sales Performance (Last 30 Days)</h3>
+                    <div id="sales-chart" style="height: 300px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; color: var(--text-light);">
+                        Sales trend visualization
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom: 2rem;">🎯 Product Stats</h3>
+                    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                        <div style="padding: 1rem; background: var(--bg-light); border-radius: 0.75rem;">
+                            <div style="font-size: 0.875rem; color: var(--text-light); margin-bottom: 0.5rem;">Out of Stock</div>
+                            <div style="font-size: 1.75rem; font-weight: 800; color: var(--danger-color);" id="out-of-stock">0</div>
+                        </div>
+                        <div style="padding: 1rem; background: var(--bg-light); border-radius: 0.75rem;">
+                            <div style="font-size: 0.875rem; color: var(--text-light); margin-bottom: 0.5rem;">Low Stock (<10)</div>
+                            <div style="font-size: 1.75rem; font-weight: 800; color: var(--accent-color);" id="low-stock">0</div>
+                        </div>
+                        <div style="padding: 1rem; background: var(--bg-light); border-radius: 0.75rem;">
+                            <div style="font-size: 0.875rem; color: var(--text-light); margin-bottom: 0.5rem;">Top Seller</div>
+                            <div style="font-size: 1rem; font-weight: 600; color: var(--text-dark);" id="top-product">—</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Orders & Products -->
+            <div id="orders" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 3rem;">
+                <!-- Recent Orders -->
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <h3>🛒 Recent Orders</h3>
+                        <a href="seller-orders.html" style="color: var(--primary-color); font-weight: 600;">View All →</a>
+                    </div>
+                    <div id="recent-orders">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+
+                <!-- Top Products -->
+                <div id="products" class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <h3>🔥 Top Selling Products</h3>
+                        <a href="seller-products.html" style="color: var(--primary-color); font-weight: 600;">View All →</a>
+                    </div>
+                    <div id="top-products">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory Alerts -->
+            <div id="inventory" class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h3>⚠️ Inventory Alerts</h3>
+                    <button class="btn btn-secondary" onclick="manageInventory()">Manage Inventory</button>
+                </div>
+                <div id="inventory-alerts">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+            </div>
+            <!-- End dashboard-content -->
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 Optimistic · Seller Dashboard</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/realtime.js"></script>
+    <script>
+        async function loadDashboard() {
+            if (!api.isAuthenticated()) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                const user = await api.getProfile();
+                if (user.role !== 'SELLER' && user.role !== 'ADMIN') {
+                    document.getElementById('dashboard-content').style.display = 'none';
+                    document.getElementById('access-denied').style.display = 'block';
+                    return;
+                }
+
+                // Check verification status
+                if (user.seller_profile && !user.seller_profile.is_verified) {
+                    document.getElementById('verification-banner').style.display = 'block';
+                }
+
+                await Promise.all([
+                    loadMetrics(),
+                    loadRecentOrders(),
+                    loadTopProducts(),
+                    loadInventoryAlerts()
+                ]);
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        async function loadMetrics() {
+            try {
+                // Use new analytics endpoint for seller-specific metrics
+                const analytics = await api.getSellerAnalytics();
+                
+                // Update product metrics
+                document.getElementById('total-products').textContent = analytics.products.total;
+                document.getElementById('active-products-count').textContent = analytics.products.active;
+                
+                // Update order metrics
+                document.getElementById('total-orders').textContent = analytics.orders.total;
+                document.getElementById('pending-orders-count').textContent = analytics.orders.pending;
+
+                // Calculate total sales - use revenue from analytics
+                const totalSales = analytics.revenue.total;
+                document.getElementById('total-sales').textContent = `K${totalSales.toFixed(2)}`;
+
+                // For month sales, use total for now (could be enhanced with date filtering)
+                document.getElementById('month-sales').textContent = `K${totalSales.toFixed(2)}`;
+
+                // Calculate average rating (mock for now)
+                document.getElementById('avg-rating').textContent = '4.7';
+                document.getElementById('total-reviews').textContent = '128';
+
+                // Stock stats - get from products for detailed stock info
+                const productsData = await api.getProducts({ seller: 'me' });
+                const products = productsData.results || [];
+                const outOfStock = products.filter(p => p.stock === 0).length;
+                const lowStock = products.filter(p => p.stock > 0 && p.stock < 10).length;
+                document.getElementById('out-of-stock').textContent = outOfStock;
+                document.getElementById('low-stock').textContent = lowStock;
+
+                // Top product (mock)
+                if (products.length > 0) {
+                    document.getElementById('top-product').textContent = products[0].name;
+                }
+            } catch (error) {
+                console.error('Error loading metrics:', error);
+            }
+        }
+
+        async function loadRecentOrders() {
+            try {
+                const data = await api.getSellerOrders();
+                const container = document.getElementById('recent-orders');
+                
+                if (!data.results || data.results.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>No orders yet</p></div>';
+                    return;
+                }
+                
+                const orders = data.results.slice(0, 5);
+                container.innerHTML = orders.map(order => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border-color);">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; margin-bottom: 0.25rem;">Order #${order.id}</div>
+                            <div style="color: var(--text-light); font-size: 0.875rem;">${new Date(order.created_at).toLocaleDateString()}</div>
+                        </div>
+                        <div style="text-align: right; margin-right: 1rem;">
+                            <div style="font-weight: 700; color: var(--primary-color); margin-bottom: 0.25rem;">K${parseFloat(order.total_amount).toFixed(2)}</div>
+                            <span class="badge badge-${getStatusColor(order.status)}">${order.status}</span>
+                        </div>
+                        <button class="btn btn-primary" style="padding: 0.5rem 1rem;">View</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                document.getElementById('recent-orders').innerHTML = '<div class="alert alert-error">Failed to load orders</div>';
+            }
+        }
+
+        async function loadTopProducts() {
+            try {
+                const data = await api.getProducts({ seller: 'me' });
+                const container = document.getElementById('top-products');
+                
+                if (!data.results || data.results.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>No products yet</p></div>';
+                    return;
+                }
+                
+                const products = data.results.slice(0, 5);
+                container.innerHTML = products.map(product => `
+                    <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; border-bottom: 1px solid var(--border-color);">
+                        <div style="width: 60px; height: 60px; background: var(--bg-light); border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                            📦
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; margin-bottom: 0.25rem;">${product.name}</div>
+                            <div style="color: var(--text-light); font-size: 0.875rem;">Stock: ${product.stock}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 700; color: var(--primary-color);">K${parseFloat(product.price).toFixed(2)}</div>
+                            <span class="badge badge-success">Active</span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading products:', error);
+                document.getElementById('top-products').innerHTML = '<div class="alert alert-error">Failed to load products</div>';
+            }
+        }
+
+        async function loadInventoryAlerts() {
+            try {
+                const data = await api.getProducts({ seller: 'me' });
+                const container = document.getElementById('inventory-alerts');
+                
+                if (!data.results || data.results.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>No inventory alerts</p></div>';
+                    return;
+                }
+                
+                const alerts = data.results.filter(p => p.stock < 10);
+                
+                if (alerts.length === 0) {
+                    container.innerHTML = '<div class="alert alert-success">✅ All products have adequate stock levels</div>';
+                    return;
+                }
+                
+                container.innerHTML = alerts.map(product => `
+                    <div class="alert ${product.stock === 0 ? 'alert-error' : 'alert-warning'}" style="margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${product.name}</strong>
+                                <div style="margin-top: 0.5rem;">
+                                    ${product.stock === 0 ? '❌ Out of stock' : `⚠️ Low stock: ${product.stock} units remaining`}
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" onclick="restockProduct(${product.id})">Restock</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading inventory alerts:', error);
+                document.getElementById('inventory-alerts').innerHTML = '<div class="alert alert-error">Failed to load inventory alerts</div>';
+            }
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'PENDING': 'warning',
+                'PAID': 'success',
+                'SHIPPED': 'info',
+                'DELIVERED': 'success',
+                'CANCELLED': 'danger'
+            };
+            return colors[status] || 'warning';
+        }
+
+        function checkVerification() {
+            alert('Your verification is being processed. We will notify you once approved.');
+        }
+
+        async function downloadReport() {
+            const btn = event?.target;
+            const originalText = btn?.textContent;
+            
+            if (btn) {
+                btn.textContent = '📊 Generating...';
+                btn.disabled = true;
+            }
+            
+            // Simulate report generation
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            alert('Sales report generated! This feature would download a detailed PDF/Excel report.');
+            
+            if (btn) {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function manageInventory() {
+            window.location.href = 'seller-products.html';
+        }
+
+        function restockProduct(productId) {
+            const quantity = prompt('Enter quantity to add to stock:');
+            if (quantity && !isNaN(quantity) && quantity > 0) {
+                alert(`Added ${quantity} units to product stock. This would update via API.`);
+                loadInventoryAlerts();
+            }
+        }
+
+        // Real-time update interval
+        let refreshInterval;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadDashboard();
+            
+            // Start real-time updates every 30 seconds
+            refreshInterval = setInterval(async () => {
+                console.log('Auto-refreshing seller dashboard...');
+                await loadMetrics();
+                await loadRecentOrders();
+                await loadInventoryAlerts();
+            }, 30000);
+        });
+
+        // Clear interval on page unload
+        window.addEventListener('beforeunload', () => {
+            if (refreshInterval) clearInterval(refreshInterval);
+        });
+    </script>
+</body>
+</html>

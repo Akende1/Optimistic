@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Dashboard — Optimistic</title>
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/layout.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <link rel="stylesheet" href="/static/css/mobile.css">
+    <link rel="stylesheet" href="/static/css/responsive.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="nav-logo">Optimistic</a>
+            <ul class="nav-links">
+                <li><a href="buyer-dashboard.html">📊 Dashboard</a></li>
+                <li><a href="products.html">🛍️ Shop</a></li>
+                <li><a href="orders.html">📦 My Orders</a></li>
+                <li><a href="wishlist.html">❤️ Wishlist</a></li>
+                <li><a href="cart.html">🛒 Cart <span class="cart-badge" id="cart-count">0</span></a></li>
+                <li><a href="profile.html">👤 Profile</a></li>
+                <li><a href="#" onclick="api.logout()" style="color: #ef4444;">🚪 Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Dashboard Section -->
+    <section class="section py-8 mobile:py-6">
+        <div class="container px-6 mobile:px-4">
+            <div id="login-required" class="hidden text-center py-16 mobile:py-12">
+                <h2 class="text-danger text-3xl font-bold mb-4 mobile:text-2xl">🔒 Login Required</h2>
+                <p class="text-base mb-6 mobile:text-sm mobile:mb-4">Please login to access your dashboard.</p>
+                <a href="login.html" class="btn btn-primary mr-3 mobile:block mobile:mb-3 mobile:mr-0">Login</a>
+                <a href="register.html" class="btn btn-secondary mobile:block">Create Account</a>
+            </div>
+            <div id="dashboard-content">
+            <!-- Profile Header with Picture -->
+            <div class="profile-header p-6 rounded-xl mb-8 mobile:p-4 mobile:mb-6" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%); color: white;">
+                <div class="flex items-center gap-6 mobile:flex-col mobile:gap-4 mobile:text-center">
+                    <div class="relative mobile:mx-auto">
+                        <img id="profile-pic" src="" alt="Profile" style="width: 100px; height: 100px; border-radius: 50%; border: 4px solid white; object-fit: cover; background: white; display: none;">
+                        <div id="profile-placeholder" class="flex items-center justify-center" style="width: 100px; height: 100px; border-radius: 50%; border: 4px solid white; background: rgba(255,255,255,0.2); font-size: 3rem;">👤</div>
+                        <input type="file" id="profile-pic-input" accept="image/*" style="display: none;">
+                        <button onclick="document.getElementById('profile-pic-input').click()" class="absolute bottom-0 right-0" style="background: white; color: var(--primary-color); border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2); font-size: 1.2rem;">📷</button>
+                    </div>
+                    <div class="flex-1">
+                        <h1 class="text-4xl font-extrabold mb-2 mobile:text-2xl" style="color: white;">👋 Welcome Back, <span id="user-name">User</span>!</h1>
+                        <p class="opacity-90 mobile:text-sm">Track your orders, manage wishlist, and discover great deals</p>
+                    </div>
+                    <div class="mobile:w-full">
+                        <a href="products.html" class="btn mobile:w-full" style="background: white; color: var(--primary-color); padding: 0.75rem 1.5rem;">🛍️ Continue Shopping</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mobile:gap-4 mobile:mb-6">
+                <div class="card p-6 mobile:p-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+                    <div class="text-5xl mb-4 mobile:text-4xl">📦</div>
+                    <div class="text-4xl font-extrabold mb-2 mobile:text-3xl" id="total-orders">0</div>
+                    <div class="opacity-90 font-semibold">Total Orders</div>
+                    <a href="orders.html" class="mt-4 inline-block text-white underline text-sm">View All →</a>
+                </div>
+
+                <div class="card p-6 mobile:p-4" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none;">
+                    <div class="text-5xl mb-4 mobile:text-4xl">🚚</div>
+                    <div class="text-4xl font-extrabold mb-2 mobile:text-3xl" id="pending-orders">0</div>
+                    <div class="opacity-90 font-semibold">Active Deliveries</div>
+                    <a href="orders.html" class="mt-4 inline-block text-white underline text-sm">Track Orders →</a>
+                </div>
+
+                <div class="card p-6 mobile:p-4" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none;">
+                    <div class="text-5xl mb-4 mobile:text-4xl">❤️</div>
+                    <div class="text-4xl font-extrabold mb-2 mobile:text-3xl" id="wishlist-count">0</div>
+                    <div class="opacity-90 font-semibold">Wishlist Items</div>
+                    <a href="wishlist.html" class="mt-4 inline-block text-white underline text-sm">View Wishlist →</a>
+                </div>
+
+                <div class="card p-6 mobile:p-4" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; border: none;">
+                    <div class="text-5xl mb-4 mobile:text-4xl">💰</div>
+                    <div class="text-4xl font-extrabold mb-2 mobile:text-3xl" id="total-spent">K0</div>
+                    <div class="opacity-90 font-semibold">Total Spent</div>
+                    <div class="mt-4 text-sm opacity-90">Lifetime purchases</div>
+                </div>
+            </div>
+
+            <!-- Order Status Overview -->
+            <div class="card p-6 mb-8 mobile:p-4 mobile:mb-6">
+                <h3 class="text-2xl font-bold mb-6 mobile:text-xl mobile:mb-4">📊 Order Status Overview</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mobile:gap-3">
+                    <div class="text-center p-4 rounded-lg mobile:p-3" style="background: var(--bg-light);">
+                        <div class="text-4xl mb-2 mobile:text-3xl">⏳</div>
+                        <div class="text-3xl font-extrabold mb-2 mobile:text-2xl" style="color: var(--accent-color);" id="status-pending">0</div>
+                        <div class="text-sm" style="color: var(--text-light);">Pending</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg mobile:p-3" style="background: var(--bg-light);">
+                        <div class="text-4xl mb-2 mobile:text-3xl">✅</div>
+                        <div class="text-3xl font-extrabold mb-2 mobile:text-2xl" style="color: var(--success-color);" id="status-confirmed">0</div>
+                        <div class="text-sm" style="color: var(--text-light);">Confirmed</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg mobile:p-3" style="background: var(--bg-light);">
+                        <div class="text-4xl mb-2 mobile:text-3xl">📦</div>
+                        <div class="text-3xl font-extrabold mb-2 mobile:text-2xl" style="color: var(--primary-color);" id="status-shipped">0</div>
+                        <div class="text-sm" style="color: var(--text-light);">Shipped</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg mobile:p-3" style="background: var(--bg-light);">
+                        <div class="text-4xl mb-2 mobile:text-3xl">🎉</div>
+                        <div class="text-3xl font-extrabold mb-2 mobile:text-2xl" style="color: var(--secondary-color);" id="status-delivered">0</div>
+                        <div class="text-sm" style="color: var(--text-light);">Delivered</div>
+                    </div>
+                    <div class="text-center p-4 rounded-lg mobile:p-3" style="background: var(--bg-light);">
+                        <div class="text-4xl mb-2 mobile:text-3xl">❌</div>
+                        <div class="text-3xl font-extrabold mb-2 mobile:text-2xl" style="color: var(--danger-color);" id="status-cancelled">0</div>
+                        <div class="text-sm" style="color: var(--text-light);">Cancelled</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Orders and Recommendations -->
+            <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 2rem; margin-bottom: 3rem;">
+                <!-- Recent Orders -->
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                        <h3>🛒 Recent Orders</h3>
+                        <a href="orders.html" style="color: var(--primary-color); font-weight: 600;">View All →</a>
+                    </div>
+                    <div id="recent-orders">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card">
+                    <h3 style="margin-bottom: 2rem;">⚡ Quick Actions</h3>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <button class="btn btn-primary" onclick="window.location.href='products.html'" style="width: 100%; justify-content: center; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>🛍️</span> Browse Products
+                        </button>
+                        <button class="btn btn-secondary" onclick="window.location.href='orders.html'" style="width: 100%; justify-content: center; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>📦</span> Track Orders
+                        </button>
+                        <button class="btn btn-secondary" onclick="window.location.href='wishlist.html'" style="width: 100%; justify-content: center; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>❤️</span> View Wishlist
+                        </button>
+                        <button class="btn btn-secondary" onclick="window.location.href='profile.html'" style="width: 100%; justify-content: center; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>👤</span> Edit Profile
+                        </button>
+                    </div>
+                    
+                    <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border-color);">
+                        <h4 style="margin-bottom: 1rem; font-size: 1rem;">📍 Saved Addresses</h4>
+                        <div style="background: var(--bg-light); padding: 1rem; border-radius: 0.5rem; margin-bottom: 0.5rem;">
+                            <div style="font-weight: 600; margin-bottom: 0.25rem;">Home</div>
+                            <div style="color: var(--text-light); font-size: 0.875rem;" id="saved-address">Loading...</div>
+                        </div>
+                        <button class="btn btn-secondary" style="width: 100%; font-size: 0.875rem; padding: 0.5rem 1rem;" onclick="window.location.href='profile.html'">Manage Addresses</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommended Products -->
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h3>✨ Recommended For You</h3>
+                    <a href="products.html" style="color: var(--primary-color); font-weight: 600;">View All →</a>
+                </div>
+                <div id="recommended-products" class="products-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem;">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+
+            <!-- Deals & Offers -->
+            <div class="card" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white; border: none; margin-top: 3rem;">
+                <div style="display: flex; align-items: center; gap: 2rem;">
+                    <div style="font-size: 4rem;">🎁</div>
+                    <div style="flex: 1;">
+                        <h3 style="margin-bottom: 0.5rem; color: white;">Special Deals & Offers</h3>
+                        <p style="margin: 0; opacity: 0.9;">Get exclusive discounts on your favorite products</p>
+                    </div>
+                    <a href="products.html" class="btn" style="background: white; color: #f59e0b; font-weight: 700;">Browse Deals →</a>
+                </div>
+            </div>
+            </div>
+            <!-- End dashboard-content -->
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>About Optimistic</h4>
+                    <ul>
+                        <li><a href="about.html">About Us</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Customer Service</h4>
+                    <ul>
+                        <li><a href="orders.html">Track Order</a></li>
+                        <li><a href="contact.html">Help Center</a></li>
+                    </ul>
+                </div>
+            </div>
+            <p>© 2026 Optimistic. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/realtime.js"></script>
+    <script>
+        async function loadDashboard() {
+            if (!api.isAuthenticated()) {
+                document.getElementById('dashboard-content').style.display = 'none';
+                document.getElementById('login-required').style.display = 'block';
+                return;
+            }
+
+            try {
+                const user = await api.getProfile();
+                document.getElementById('user-name').textContent = user.username || 'User';
+                
+                // Load profile picture
+                if (user.profile_picture_url) {
+                    document.getElementById('profile-pic').src = user.profile_picture_url;
+                    document.getElementById('profile-pic').style.display = 'block';
+                    document.getElementById('profile-placeholder').style.display = 'none';
+                }
+                
+                // Load saved address
+                if (user.address) {
+                    document.getElementById('saved-address').textContent = user.address;
+                } else {
+                    document.getElementById('saved-address').textContent = 'No address saved';
+                }
+
+                await Promise.all([
+                    loadOrderStats(),
+                    loadRecentOrders(),
+                    loadRecommendedProducts()
+                ]);
+
+                updateCartCount();
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        async function loadOrderStats() {
+            try {
+                const data = await api.getOrders();
+                const orders = data.results || [];
+                
+                // Total orders
+                document.getElementById('total-orders').textContent = orders.length;
+                
+                // Count by status
+                const statusCounts = {
+                    pending: 0,
+                    confirmed: 0,
+                    shipped: 0,
+                    delivered: 0,
+                    cancelled: 0
+                };
+                
+                orders.forEach(order => {
+                    const status = order.status.toLowerCase();
+                    if (status === 'pending') statusCounts.pending++;
+                    else if (status === 'paid' || status === 'processing') statusCounts.confirmed++;
+                    else if (status === 'shipped' || status === 'ready_for_delivery') statusCounts.shipped++;
+                    else if (status === 'delivered') statusCounts.delivered++;
+                    else if (status === 'cancelled') statusCounts.cancelled++;
+                });
+                
+                document.getElementById('status-pending').textContent = statusCounts.pending;
+                document.getElementById('status-confirmed').textContent = statusCounts.confirmed;
+                document.getElementById('status-shipped').textContent = statusCounts.shipped;
+                document.getElementById('status-delivered').textContent = statusCounts.delivered;
+                document.getElementById('status-cancelled').textContent = statusCounts.cancelled;
+                
+                // Pending/active orders (shipped + confirmed)
+                document.getElementById('pending-orders').textContent = statusCounts.shipped + statusCounts.confirmed;
+                
+                // Total spent
+                const totalSpent = orders.reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0);
+                document.getElementById('total-spent').textContent = `K${totalSpent.toFixed(2)}`;
+                
+                // Mock wishlist count
+                document.getElementById('wishlist-count').textContent = '5';
+            } catch (error) {
+                console.error('Error loading order stats:', error);
+            }
+        }
+
+        async function loadRecentOrders() {
+            try {
+                const data = await api.getOrders();
+                const container = document.getElementById('recent-orders');
+                
+                if (!data.results || data.results.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>No orders yet. <a href="products.html">Start shopping!</a></p></div>';
+                    return;
+                }
+                
+                const orders = data.results.slice(0, 4);
+                container.innerHTML = orders.map(order => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border-color);">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; margin-bottom: 0.5rem;">Order #${order.id}</div>
+                            <div style="color: var(--text-light); font-size: 0.875rem; margin-bottom: 0.5rem;">${new Date(order.created_at).toLocaleDateString()}</div>
+                            <span class="badge badge-${getStatusColor(order.status)}">${order.status}</span>
+                        </div>
+                        <div style="text-align: right; margin-right: 1rem;">
+                            <div style="font-weight: 700; color: var(--primary-color); font-size: 1.25rem;">K${parseFloat(order.total_amount).toFixed(2)}</div>
+                        </div>
+                        <button class="btn btn-primary" style="padding: 0.5rem 1rem;" onclick="viewOrder(${order.id})">Track</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                document.getElementById('recent-orders').innerHTML = '<div class="alert alert-error">Failed to load orders</div>';
+            }
+        }
+
+        async function loadRecommendedProducts() {
+            try {
+                const data = await api.getProducts();
+                const container = document.getElementById('recommended-products');
+                
+                if (!data.results || data.results.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>No products available</p></div>';
+                    return;
+                }
+                
+                const products = data.results.slice(0, 4);
+                container.innerHTML = products.map(product => `
+                    <div class="product-card">
+                        <div class="product-image">📦</div>
+                        <div class="product-info">
+                            <h3 class="product-title">${product.name}</h3>
+                            <p class="product-price">K${parseFloat(product.price).toFixed(2)}</p>
+                            <button class="btn btn-primary" onclick="viewProduct(${product.id})">View Details</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading products:', error);
+                document.getElementById('recommended-products').innerHTML = '<div class="alert alert-error">Failed to load products</div>';
+            }
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'PENDING': 'warning',
+                'PAID': 'success',
+                'PROCESSING': 'info',
+                'SHIPPED': 'info',
+                'DELIVERED': 'success',
+                'CANCELLED': 'danger',
+                'READY_FOR_DELIVERY': 'info'
+            };
+            return colors[status.toUpperCase()] || 'warning';
+        }
+
+        function viewOrder(orderId) {
+            window.location.href = `orders.html?order=${orderId}`;
+        }
+
+        function viewProduct(productId) {
+            window.location.href = `product-detail.html?id=${productId}`;
+        }
+
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            document.getElementById('cart-count').textContent = cart.length;
+        }
+
+        // Profile picture upload
+        document.getElementById('profile-pic-input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Image must be less than 5MB');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('profile_picture', file);
+                
+                const response = await api.updateProfilePicture(formData);
+                
+                // Update display
+                if (response.profile_picture_url) {
+                    document.getElementById('profile-pic').src = response.profile_picture_url;
+                    document.getElementById('profile-pic').style.display = 'block';
+                    document.getElementById('profile-placeholder').style.display = 'none';
+                }
+                
+                alert('Profile picture updated successfully!');
+            } catch (error) {
+                console.error('Failed to upload profile picture:', error);
+                alert('Failed to upload profile picture');
+            }
+        });
+
+        // Real-time update interval
+        let refreshInterval;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadDashboard();
+            
+            // Start real-time updates every 30 seconds
+            refreshInterval = setInterval(async () => {
+                console.log('Auto-refreshing buyer dashboard...');
+                await loadOrderStats();
+                await loadRecentOrders();
+                updateCartCount();
+            }, 30000);
+        });
+
+        // Clear interval on page unload
+        window.addEventListener('beforeunload', () => {
+            if (refreshInterval) clearInterval(refreshInterval);
+        });
+    </script>
+</body>
+</html>

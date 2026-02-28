@@ -1,0 +1,22 @@
+# Core Django
+Django==5.0.1
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.3.1
+
+# Database
+psycopg2-binary==2.9.9
+
+# Filters
+django-filter==23.5
+
+# Image handling
+Pillow==10.2.0
+
+# CORS (for future frontend)
+django-cors-headers==4.3.1
+
+# Environment variables
+python-decouple==3.8
+
+# Development
+django-debug-toolbar==4.2.0

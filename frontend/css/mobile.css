@@ -1,0 +1,932 @@
+/* ========================================
+   MODERN MOBILE RESPONSIVE STYLES
+   Smooth Animations & Touch-Friendly Design
+   ======================================== */
+
+/* ========================================
+   1. MOBILE BASE & TOUCH OPTIMIZATIONS
+   ======================================== */
+
+html {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+html, body {
+    overflow-x: hidden;
+    width: 100%;
+}
+
+/* Smooth touch interactions */
+button, a, input, select, textarea {
+    min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Remove 300ms click delay on mobile */
+a, button, input, select, textarea {
+    touch-action: manipulation;
+}
+
+/* ========================================
+   2. RESPONSIVE TYPOGRAPHY WITH FLUID SCALING
+   ======================================== */
+
+@media (max-width: 767px) {
+    h1 { 
+        font-size: clamp(1.75rem, 5vw, 2.5rem);
+        margin-bottom: var(--space-4);
+    }
+    
+    h2 { 
+        font-size: clamp(1.5rem, 4vw, 2rem);
+        margin-bottom: var(--space-3);
+    }
+    
+    h3 { 
+        font-size: clamp(1.25rem, 3vw, 1.75rem);
+    }
+    
+    h4 { 
+        font-size: 1.125rem;
+    }
+    
+    body {
+        font-size: 16px;
+        line-height: 1.6;
+    }
+    
+    .hero h1 {
+        font-size: clamp(2rem, 7vw, 3rem) !important;
+        line-height: 1.2;
+        margin-bottom: var(--space-4);
+    }
+    
+    .hero p {
+        font-size: clamp(1rem, 3vw, 1.25rem) !important;
+        line-height: 1.6;
+    }
+    
+    .section-title {
+        font-size: clamp(1.75rem, 5vw, 2.5rem) !important;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+    h1 { font-size: 2.5rem; }
+    h2 { font-size: 2rem; }
+    h3 { font-size: 1.5rem; }
+    
+    .hero h1 {
+        font-size: 3rem !important;
+    }
+}
+
+/* ========================================
+   3. MODERN MOBILE NAVIGATION
+   ======================================== */
+
+@media (max-width: 767px) {
+    .navbar {
+        padding: var(--space-3) 0;
+        position: sticky;
+        top: 0;
+        background: var(--bg-primary);
+        box-shadow: var(--shadow-md);
+        z-index: 100;
+    }
+    
+    .nav-container {
+        padding: 0 var(--space-4);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: relative;
+    }
+    
+    .nav-logo {
+        font-size: 1.5rem;
+        font-weight: 800;
+        z-index: 101;
+    }
+    
+    /* Hamburger Menu Toggle */
+    .mobile-menu-toggle {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        cursor: pointer;
+        padding: var(--space-2);
+        background: none;
+        border: none;
+        z-index: 101;
+        transition: all var(--transition-fast);
+    }
+    
+    .hamburger-line {
+        width: 24px;
+        height: 2px;
+        background: var(--text-dark);
+        transition: all var(--transition-fast);
+        border-radius: 2px;
+    }
+    
+    /* Hamburger animation when active */
+    .mobile-menu-toggle.active .hamburger-line:nth-child(1) {
+        transform: rotate(45deg) translate(6px, 6px);
+    }
+    
+    .mobile-menu-toggle.active .hamburger-line:nth-child(2) {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    
+    .mobile-menu-toggle.active .hamburger-line:nth-child(3) {
+        transform: rotate(-45deg) translate(6px, -6px);
+    }
+    
+    /* Hide desktop nav links on mobile */
+    .nav-links {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--bg-primary);
+        flex-direction: column;
+        padding: 5rem 2rem 2rem;
+        gap: 0.5rem;
+        transform: translateX(-100%);
+        transition: transform var(--transition-base);
+        overflow-y: auto;
+        z-index: 99;
+        box-shadow: var(--shadow-xl);
+    }
+    
+    .nav-links.active {
+        transform: translateX(0);
+    }
+    
+    .nav-links li {
+        width: 100%;
+    }
+    
+    .nav-links a {
+        display: block;
+        padding: var(--space-3) var(--space-4);
+        font-size: 1.125rem;
+        font-weight: 600;
+        border-radius: var(--radius-lg);
+        transition: all var(--transition-fast);
+        color: var(--text-dark);
+    }
+    
+    .nav-links a:hover,
+    .nav-links a:active {
+        background: var(--bg-secondary);
+        color: var(--primary-color);
+        transform: translateX(8px);
+    }
+    
+    .nav-links li.active a {
+        background: var(--primary-color);
+        color: white;
+    }
+    
+    /* Cart badge on mobile */
+    .cart-badge {
+        display: inline-block;
+        background: var(--danger-color);
+        color: white;
+        font-size: 0.75rem;
+        padding: 0.125rem 0.5rem;
+        border-radius: var(--radius-full);
+        font-weight: 700;
+        margin-left: 0.5rem;
+        min-width: 20px;
+        text-align: center;
+    }
+    
+    /* Mobile menu overlay */
+    .mobile-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--transition-base);
+        z-index: 98;
+    }
+    
+    .mobile-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    
+    /* Hide nav-right on mobile (merged into single nav-links) */
+    .nav-right {
+        display: none;
+    }
+}
+    
+    .mobile-menu-toggle.active span:nth-child(1) {
+        transform: rotate(45deg) translateY(7px);
+    }
+    
+    .mobile-menu-toggle.active span:nth-child(2) {
+        opacity: 0;
+    }
+    
+    .mobile-menu-toggle.active span:nth-child(3) {
+        transform: rotate(-45deg) translateY(-7px);
+    }
+}
+
+/* ========================================
+   4. RESPONSIVE HERO WITH SMOOTH ANIMATIONS
+   ======================================== */
+
+@media (max-width: 767px) {
+    .hero {
+        padding: clamp(3rem, 8vw, 5rem) 0;
+    }
+    
+    .hero .btn {
+        width: 100%;
+        max-width: 300px;
+        justify-content: center;
+    }
+}
+        border-bottom: 1px solid var(--border-color, #e5e7eb);
+    }
+    
+    .nav-link {
+        padding: 1rem;
+        display: block;
+        width: 100%;
+    }
+    
+    /* Hamburger menu */
+    .navbar-toggle {
+        display: block;
+        background: transparent;
+        border: none;
+        padding: 0.5rem;
+        cursor: pointer;
+    }
+    
+    .navbar-toggle span {
+        display: block;
+        width: 25px;
+        height: 3px;
+        background: var(--text-dark, #1f2937);
+        margin: 5px 0;
+        transition: 0.3s;
+    }
+    
+    /* Hide menu by default on mobile */
+    .navbar-collapse {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        z-index: 1000;
+    }
+    
+    .navbar-collapse.active {
+        display: block;
+    }
+}
+
+/* Desktop navigation */
+@media (min-width: 768px) {
+    .navbar-toggle {
+        display: none;
+    }
+    
+    .navbar-collapse {
+        display: flex !important;
+    }
+    
+    .navbar-nav {
+        flex-direction: row;
+        gap: 1rem;
+    }
+}
+
+/* ========================================
+   4. RESPONSIVE GRID & LAYOUT
+   ======================================== */
+
+/* Mobile: Stack everything vertically */
+@media (max-width: 767px) {
+    .row, .grid, .product-grid, .category-grid {
+        display: block;
+    }
+    
+    .col, [class*="col-"] {
+        width: 100% !important;
+        margin-bottom: 1rem;
+    }
+    
+    /* Product grid: 2 columns on mobile */
+    .product-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+    
+    /* Category pills: horizontal scroll */
+    .category-list {
+        display: flex;
+        overflow-x: auto;
+        gap: 0.5rem;
+        padding: 0.5rem 0;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+    }
+    
+    .category-list::-webkit-scrollbar {
+        display: none; /* Chrome, Safari */
+    }
+}
+
+/* Tablet: 3 columns */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .product-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+    }
+}
+
+/* Desktop: 4 columns */
+@media (min-width: 1024px) {
+    .product-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+    }
+}
+
+/* ========================================
+   5. RESPONSIVE CONTAINERS
+   ======================================== */
+
+.container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Mobile */
+@media (max-width: 639px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+/* Tablet */
+@media (min-width: 640px) {
+    .container {
+        max-width: 640px;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .container {
+        max-width: 768px;
+    }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+    .container {
+        max-width: 1024px;
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+}
+
+@media (min-width: 1280px) {
+    .container {
+        max-width: 1280px;
+    }
+}
+
+/* ========================================
+   6. RESPONSIVE BUTTONS
+   ======================================== */
+
+/* Mobile: Full-width buttons */
+@media (max-width: 767px) {
+    .btn {
+        width: 100%;
+        display: block;
+        text-align: center;
+        padding: 0.875rem 1rem;
+        font-size: 1rem;
+    }
+    
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .btn-group .btn {
+        width: 100%;
+    }
+}
+
+/* Desktop: Inline buttons */
+@media (min-width: 768px) {
+    .btn {
+        width: auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-group {
+        display: flex;
+        flex-direction: row;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+}
+
+/* Touch-friendly active state */
+.btn:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+}
+
+/* ========================================
+   7. RESPONSIVE FORMS
+   ======================================== */
+
+/* Mobile: Stack form elements */
+@media (max-width: 767px) {
+    .form-row {
+        display: block;
+    }
+    
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+    
+    .form-control, .form-input, .form-select, .form-textarea {
+        font-size: 16px; /* Prevent zoom on iOS */
+        padding: 0.875rem 1rem;
+        width: 100%;
+    }
+    
+    label {
+        font-size: 0.9375rem;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+}
+
+/* Desktop: 2-column forms */
+@media (min-width: 768px) {
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+}
+
+/* ========================================
+   8. RESPONSIVE PRODUCT CARDS
+   ======================================== */
+
+/* Mobile: Compact cards */
+@media (max-width: 767px) {
+    .product-card {
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    
+    .product-image {
+        aspect-ratio: 1 / 1;
+        object-fit: cover;
+        width: 100%;
+    }
+    
+    .product-info {
+        padding: 0.75rem;
+    }
+    
+    .product-title {
+        font-size: 0.875rem;
+        line-height: 1.3;
+        margin-bottom: 0.5rem;
+        /* Truncate long titles */
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    .product-price {
+        font-size: 1rem;
+        font-weight: 700;
+    }
+    
+    .product-meta {
+        font-size: 0.75rem;
+    }
+}
+
+/* Desktop: Larger cards */
+@media (min-width: 768px) {
+    .product-card {
+        border-radius: 0.75rem;
+    }
+    
+    .product-info {
+        padding: 1rem;
+    }
+    
+    .product-title {
+        font-size: 1rem;
+    }
+}
+
+/* ========================================
+   9. RESPONSIVE MODALS
+   ======================================== */
+
+/* Mobile: Full-screen modals */
+@media (max-width: 767px) {
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        border-radius: 0;
+    }
+    
+    .modal-content {
+        height: 100%;
+        overflow-y: auto;
+        border-radius: 0;
+    }
+    
+    .modal-header {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 10;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color, #e5e7eb);
+    }
+}
+
+/* Desktop: Centered modals */
+@media (min-width: 768px) {
+    .modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        border-radius: 0.75rem;
+    }
+}
+
+/* ========================================
+   10. RESPONSIVE HERO SECTION
+   ======================================== */
+
+/* Mobile hero */
+@media (max-width: 767px) {
+    .hero {
+        padding: 2rem 1rem;
+        min-height: 300px;
+    }
+    
+    .hero-title {
+        font-size: 1.875rem;
+        line-height: 1.2;
+    }
+    
+    .hero-subtitle {
+        font-size: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .hero-cta {
+        margin-top: 1.5rem;
+    }
+}
+
+/* Desktop hero */
+@media (min-width: 768px) {
+    .hero {
+        padding: 4rem 2rem;
+        min-height: 400px;
+    }
+    
+    .hero-title {
+        font-size: 3rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.25rem;
+    }
+}
+
+/* ========================================
+   11. RESPONSIVE TABLES
+   ======================================== */
+
+/* Mobile: Card-style tables */
+@media (max-width: 767px) {
+    table, thead, tbody, th, td, tr {
+        display: block;
+    }
+    
+    thead tr {
+        display: none;
+    }
+    
+    tr {
+        margin-bottom: 1rem;
+        border: 1px solid var(--border-color, #e5e7eb);
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        background: white;
+    }
+    
+    td {
+        padding: 0.5rem 0;
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--border-color, #e5e7eb);
+    }
+    
+    td:last-child {
+        border-bottom: none;
+    }
+    
+    td:before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--text-light, #6b7280);
+    }
+}
+
+/* Desktop: Normal table */
+@media (min-width: 768px) {
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    th, td {
+        padding: 0.75rem 1rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color, #e5e7eb);
+    }
+    
+    th {
+        font-weight: 600;
+        background: var(--bg-light, #f9fafb);
+    }
+}
+
+/* ========================================
+   12. RESPONSIVE SPACING
+   ======================================== */
+
+/* Mobile: Tighter spacing */
+@media (max-width: 767px) {
+    section {
+        padding: 2rem 0;
+    }
+    
+    .section-header {
+        margin-bottom: 1.5rem;
+    }
+    
+    .spacing-sm { margin: 0.5rem 0; }
+    .spacing-md { margin: 1rem 0; }
+    .spacing-lg { margin: 1.5rem 0; }
+}
+
+/* Desktop: Generous spacing */
+@media (min-width: 768px) {
+    section {
+        padding: 4rem 0;
+    }
+    
+    .section-header {
+        margin-bottom: 3rem;
+    }
+    
+    .spacing-sm { margin: 1rem 0; }
+    .spacing-md { margin: 2rem 0; }
+    .spacing-lg { margin: 3rem 0; }
+}
+
+/* ========================================
+   13. TOUCH OPTIMIZATIONS
+   ======================================== */
+
+/* Remove hover effects on touch devices */
+@media (hover: none) {
+    .btn:hover,
+    .card:hover,
+    a:hover {
+        transform: none;
+        box-shadow: none;
+    }
+}
+
+/* Add active states for touch */
+@media (hover: none) {
+    .btn:active,
+    .card:active,
+    a:active {
+        opacity: 0.7;
+        transform: scale(0.98);
+    }
+}
+
+/* Disable text selection for UI elements on touch */
+@media (max-width: 767px) {
+    button, .btn, .nav-link, .card {
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+}
+
+/* ========================================
+   14. RESPONSIVE IMAGES
+   ======================================== */
+
+/* Mobile: Full-width images */
+@media (max-width: 767px) {
+    img {
+        width: 100%;
+        height: auto;
+        object-fit: cover;
+    }
+    
+    .img-thumbnail {
+        border-radius: 0.5rem;
+    }
+}
+
+/* Lazy loading placeholder */
+img[loading="lazy"] {
+    background: var(--bg-light, #f9fafb);
+}
+
+/* ========================================
+   15. RESPONSIVE FOOTER
+   ======================================== */
+
+/* Mobile: Stacked footer */
+@media (max-width: 767px) {
+    footer {
+        padding: 2rem 1rem;
+    }
+    
+    .footer-columns {
+        display: block;
+    }
+    
+    .footer-column {
+        margin-bottom: 2rem;
+    }
+    
+    .footer-column:last-child {
+        margin-bottom: 0;
+    }
+}
+
+/* Desktop: Multi-column footer */
+@media (min-width: 768px) {
+    footer {
+        padding: 3rem 2rem;
+    }
+    
+    .footer-columns {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 2rem;
+    }
+}
+
+/* ========================================
+   16. UTILITY CLASSES
+   ======================================== */
+
+/* Show/hide based on screen size */
+@media (max-width: 767px) {
+    .hide-mobile {
+        display: none !important;
+    }
+    
+    .show-mobile {
+        display: block !important;
+    }
+}
+
+@media (min-width: 768px) {
+    .hide-desktop {
+        display: none !important;
+    }
+    
+    .show-desktop {
+        display: block !important;
+    }
+}
+
+/* Responsive text alignment */
+@media (max-width: 767px) {
+    .text-center-mobile {
+        text-align: center !important;
+    }
+}
+
+/* Responsive flex direction */
+@media (max-width: 767px) {
+    .flex-column-mobile {
+        flex-direction: column !important;
+    }
+}
+
+/* ========================================
+   17. PERFORMANCE OPTIMIZATIONS
+   ======================================== */
+
+/* Reduce animations on low-end devices */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Smooth scrolling on capable devices */
+@media (prefers-reduced-motion: no-preference) {
+    html {
+        scroll-behavior: smooth;
+    }
+}
+
+/* ========================================
+   18. PRINT STYLES
+   ======================================== */
+
+@media print {
+    /* Hide unnecessary elements when printing */
+    nav, footer, .btn, .navbar, .sidebar {
+        display: none !important;
+    }
+    
+    body {
+        font-size: 12pt;
+        line-height: 1.5;
+        color: black;
+        background: white;
+    }
+    
+    a {
+        text-decoration: underline;
+        color: black;
+    }
+    
+    /* Show URLs for links */
+    a[href]:after {
+        content: " (" attr(href) ")";
+    }
+}

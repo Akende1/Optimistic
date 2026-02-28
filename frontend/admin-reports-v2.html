@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>System Reports — Optimistic</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace; background: #0a0a0a; color: #e0e0e0; }
+        nav { background: #111; border-bottom: 1px solid #333; padding: 1rem 0; }
+        nav .nav-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 2rem; }
+        nav .brand { font-weight: 700; font-size: 1.2rem; color: #ff3b30; letter-spacing: 1px; }
+        nav .nav-links { display: flex; gap: 2rem; list-style: none; }
+        nav .nav-links a { text-decoration: none; color: #888; font-weight: 500; font-size: 0.9rem; transition: color 0.2s; }
+        nav .nav-links a:hover { color: #ff3b30; }
+        nav .nav-links a.active { color: #ff3b30; border-bottom: 2px solid #ff3b30; padding-bottom: 0.25rem; }
+        
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        .header { margin-bottom: 2rem; }
+        .header h1 { font-size: 1.75rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; }
+        .header p { color: #666; font-size: 0.95rem; }
+        
+        .report-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+        .report-card { background: #151515; border: 1px solid #222; border-radius: 8px; padding: 2rem; cursor: pointer; transition: all 0.2s; }
+        .report-card:hover { border-color: #ff3b30; background: #1a1a1a; }
+        .report-icon { font-size: 2rem; margin-bottom: 1rem; }
+        .report-title { font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem; }
+        .report-description { font-size: 0.9rem; color: #888; line-height: 1.5; }
+        
+        .loading { text-align: center; padding: 4rem; color: #666; }
+        
+        /* Report Styles */
+        .report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .report-header h2 { font-size: 1.5rem; color: #fff; }
+        .btn-download { background: #1890FF; color: #fff; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .btn-download:hover { background: #0066cc; }
+        
+        .report-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .stat { background: #151515; border: 1px solid #222; border-radius: 8px; padding: 1.5rem; }
+        .stat-label { font-size: 0.85rem; color: #666; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-size: 2rem; font-weight: 800; color: #fff; }
+        
+        .report-data { background: #151515; border: 1px solid #222; border-radius: 8px; padding: 1.5rem; margin-top: 2rem; }
+        .report-data h3 { font-size: 1.2rem; color: #fff; margin-bottom: 1rem; }
+        .report-data table { width: 100%; border-collapse: collapse; }
+        .report-data th { text-align: left; padding: 0.75rem; border-bottom: 1px solid #333; color: #666; font-size: 0.85rem; text-transform: uppercase; }
+        .report-data td { padding: 0.75rem; border-bottom: 1px solid #222; color: #e0e0e0; }
+        .report-data tr:hover { background: #1a1a1a; }
+        
+        .custom-query { padding: 2rem; text-align: center; color: #666; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-content">
+            <div class="brand">⚡ SYSTEM CONTROL</div>
+            <ul class="nav-links">
+                <li><a href="admin-dashboard-v2.html">Dashboard</a></li>
+                <li><a href="admin-users-v2.html">Users</a></li>
+                <li><a href="admin-products-v2.html">Products</a></li>
+                <li><a href="admin-orders-v2.html">Orders</a></li>
+                <li><a href="admin-disputes-v2.html">Disputes</a></li>
+                <li><a href="admin-finances-v2.html">Finances</a></li>
+                <li><a href="admin-reports-v2.html" class="active">Reports</a></li>
+                <li><a href="#" onclick="api.logout()" style="color: #ff3b30;">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1>System Reports</h1>
+            <p>Historical data exports — CSV, JSON, audit trails</p>
+        </div>
+
+        <div class="report-grid">
+            <div class="report-card" onclick="generateReport('gmv')">
+                <div class="report-icon">📊</div>
+                <div class="report-title">GMV Report</div>
+                <div class="report-description">Total gross merchandise value by date range, seller, category</div>
+            </div>
+
+            <div class="report-card" onclick="generateReport('revenue')">
+                <div class="report-icon">💰</div>
+                <div class="report-title">Platform Revenue</div>
+                <div class="report-description">Commission breakdown, fee analysis, period comparisons</div>
+            </div>
+
+            <div class="report-card" onclick="generateReport('user-growth')">
+                <div class="report-icon">👥</div>
+                <div class="report-title">User Growth</div>
+                <div class="report-description">Registration trends, role distribution, activation rates</div>
+            </div>
+
+            <div class="report-card" onclick="generateReport('seller-performance')">
+                <div class="report-icon">🏪</div>
+                <div class="report-title">Seller Performance</div>
+                <div class="report-description">Sales rankings, fulfillment rates, dispute frequency</div>
+            </div>
+
+            <div class="report-card" onclick="generateReport('disputes')">
+                <div class="report-icon">⚖️</div>
+                <div class="report-title">Dispute Analysis</div>
+                <div class="report-description">Resolution times, outcome distribution, recurring issues</div>
+            </div>
+
+            <div class="report-card" onclick="generateReport('logistics')">
+                <div class="report-icon">🚚</div>
+                <div class="report-title">Logistics Report</div>
+                <div class="report-description">Delivery success rates, courier performance, delay analysis</div>
+            </div>
+
+            <div class="report-card" onclick="generateReport('product-metrics')">
+                <div class="report-icon">📦</div>
+                <div class="report-title">Product Metrics</div>
+                <div class="report-description">Listing volumes, approval rates, category distribution</div>
+            </div>
+
+            <div class="report-card" onclick="generateReport('financial-audit')">
+                <div class="report-icon">💵</div>
+                <div class="report-title">Financial Audit</div>
+                <div class="report-description">Escrow movements, release history, freeze records</div>
+            </div>
+
+            <div class="report-card" onclick="generateReport('custom')">
+                <div class="report-icon">🔧</div>
+                <div class="report-title">Custom Query</div>
+                <div class="report-description">Build custom reports with specific filters and date ranges</div>
+            </div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">Generating report...</div>
+        <div id="content" style="margin-top: 2rem;"></div>
+    </div>
+
+    <script src="/static/js/api.js?v=20260129b"></script>
+    <script src="/static/js/role-guard.js?v=20260129"></script>
+    <script>
+        async function generateReport(type) {
+            const loading = document.getElementById('loading');
+            const content = document.getElementById('content');
+            
+            loading.style.display = 'block';
+            content.style.display = 'none';
+            
+            try {
+                let data;
+                const params = {
+                    start_date: getStartDate(),
+                    end_date: getEndDate()
+                };
+                
+                switch(type) {
+                    case 'gmv':
+                        data = await api.getGMVReport(params);
+                        displayGMVReport(data);
+                        break;
+                    case 'revenue':
+                        data = await api.getRevenueReport(params);
+                        displayRevenueReport(data);
+                        break;
+                    case 'user-growth':
+                        data = await api.getUserGrowthReport(params);
+                        displayUserGrowthReport(data);
+                        break;
+                    case 'seller-performance':
+                        data = await api.getSellerPerformanceReport(params);
+                        displaySellerPerformanceReport(data);
+                        break;
+                    case 'product-metrics':
+                        data = await api.getProductMetricsReport(params);
+                        displayProductMetricsReport(data);
+                        break;
+                    case 'financial-audit':
+                        data = await api.getFinancialAuditReport(params);
+                        displayFinancialAuditReport(data);
+                        break;
+                    case 'disputes':
+                        alert('Disputes report will be available once Disputes module is implemented');
+                        loading.style.display = 'none';
+                        content.style.display = 'block';
+                        return;
+                    case 'logistics':
+                        alert('Logistics report will be available once Logistics tracking is implemented');
+                        loading.style.display = 'none';
+                        content.style.display = 'block';
+                        return;
+                    case 'custom':
+                        showCustomQueryBuilder();
+                        loading.style.display = 'none';
+                        return;
+                    default:
+                        alert('Report type not implemented yet');
+                        loading.style.display = 'none';
+                        content.style.display = 'block';
+                        return;
+                }
+                
+                loading.style.display = 'none';
+                content.style.display = 'block';
+            } catch (err) {
+                console.error('Report error:', err);
+                loading.style.display = 'none';
+                content.innerHTML = `<div class="error">Failed to generate report: ${err.message}</div>`;
+                content.style.display = 'block';
+            }
+        }
+
+        function getStartDate() {
+            return new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        }
+
+        function getEndDate() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function displayGMVReport(data) {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="report-header">
+                    <h2>📊 GMV Report</h2>
+                    <button onclick="api.downloadReport('gmv', {start_date: '${data.period.start}', end_date: '${data.period.end}'})" class="btn-download">Download CSV</button>
+                </div>
+                <div class="report-summary">
+                    <div class="stat">
+                        <div class="stat-label">Total GMV</div>
+                        <div class="stat-value">K${data.summary.total_gmv.toLocaleString()}</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Total Orders</div>
+                        <div class="stat-value">${data.summary.total_orders}</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Avg Order Value</div>
+                        <div class="stat-value">K${data.summary.average_order_value.toFixed(2)}</div>
+                    </div>
+                </div>
+                <div class="report-data">
+                    <h3>Daily Breakdown</h3>
+                    <table>
+                        <thead>
+                            <tr><th>Date</th><th>GMV</th><th>Orders</th></tr>
+                        </thead>
+                        <tbody>
+                            ${data.daily_breakdown.map(day => `
+                                <tr>
+                                    <td>${day.date}</td>
+                                    <td>K${parseFloat(day.total_gmv).toFixed(2)}</td>
+                                    <td>${day.order_count}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function displayRevenueReport(data) {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="report-header">
+                    <h2>💰 Platform Revenue Report</h2>
+                    <button onclick="api.downloadReport('revenue', {start_date: '${data.period.start}', end_date: '${data.period.end}'})" class="btn-download">Download CSV</button>
+                </div>
+                <div class="report-summary">
+                    <div class="stat">
+                        <div class="stat-label">Total GMV</div>
+                        <div class="stat-value">K${data.revenue.total_gmv.toLocaleString()}</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Platform Commission</div>
+                        <div class="stat-value">K${data.revenue.platform_commission.toFixed(2)}</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Commission Rate</div>
+                        <div class="stat-value">${(data.revenue.commission_rate * 100)}%</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayUserGrowthReport(data) {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="report-header">
+                    <h2>👥 User Growth Report</h2>
+                </div>
+                <div class="report-summary">
+                    <div class="stat">
+                        <div class="stat-label">Total Users</div>
+                        <div class="stat-value">${data.summary.total_users}</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">New in Period</div>
+                        <div class="stat-value">${data.summary.new_users_in_period}</div>
+                    </div>
+                </div>
+                <div class="report-data">
+                    <h3>Role Distribution</h3>
+                    <table>
+                        <thead><tr><th>Role</th><th>Count</th></tr></thead>
+                        <tbody>
+                            ${data.role_distribution.map(role => `
+                                <tr><td>${role.role}</td><td>${role.count}</td></tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function displaySellerPerformanceReport(data) {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="report-header">
+                    <h2>🏪 Seller Performance Report</h2>
+                </div>
+                <div class="report-data">
+                    <h3>Top Sellers</h3>
+                    <table>
+                        <thead><tr><th>Rank</th><th>Seller</th><th>Total Sales</th><th>Orders</th></tr></thead>
+                        <tbody>
+                            ${data.top_sellers.map((seller, index) => `
+                                <tr>
+                                    <td>#${index + 1}</td>
+                                    <td>${seller.seller__store_name}</td>
+                                    <td>K${parseFloat(seller.total_sales).toFixed(2)}</td>
+                                    <td>${seller.order_count}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function displayProductMetricsReport(data) {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="report-header">
+                    <h2>📦 Product Metrics Report</h2>
+                </div>
+                <div class="report-summary">
+                    <div class="stat">
+                        <div class="stat-label">Total Products</div>
+                        <div class="stat-value">${data.summary.total_products}</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">New in Period</div>
+                        <div class="stat-value">${data.summary.new_products_in_period}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayFinancialAuditReport(data) {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="report-header">
+                    <h2>💵 Financial Audit Report</h2>
+                    <button onclick="api.downloadReport('financial-audit', {start_date: '${data.period.start}', end_date: '${data.period.end}'})" class="btn-download">Download CSV</button>
+                </div>
+                <div class="report-summary">
+                    <div class="stat">
+                        <div class="stat-label">Total Available</div>
+                        <div class="stat-value">K${data.escrow_summary.total_available.toFixed(2)}</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Total Pending</div>
+                        <div class="stat-value">K${data.escrow_summary.total_pending.toFixed(2)}</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Lifetime Earnings</div>
+                        <div class="stat-value">K${data.escrow_summary.total_lifetime_earnings.toFixed(2)}</div>
+                    </div>
+                </div>
+                <div class="report-data">
+                    <h3>Top Earning Sellers</h3>
+                    <table>
+                        <thead><tr><th>Store</th><th>Available</th><th>Pending</th><th>Lifetime</th><th>Last Payout</th></tr></thead>
+                        <tbody>
+                            ${data.top_earners.map(seller => `
+                                <tr>
+                                    <td>${seller.store_name}</td>
+                                    <td>K${seller.available_balance.toFixed(2)}</td>
+                                    <td>K${seller.pending_balance.toFixed(2)}</td>
+                                    <td>K${seller.lifetime_earnings.toFixed(2)}</td>
+                                    <td>${seller.last_payout ? new Date(seller.last_payout).toLocaleDateString() : 'Never'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function showCustomQueryBuilder() {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="report-header">
+                    <h2>🔧 Custom Query Builder</h2>
+                </div>
+                <div class="custom-query">
+                    <p>Custom query builder coming soon...</p>
+                    <p>This will allow you to build custom reports with specific filters, date ranges, and data fields.</p>
+                </div>
+            `;
+            content.style.display = 'block';
+        }
+
+        async function init() {
+            // Use role guard to check admin or super admin access
+            const hasAccess = await RoleGuard.requireAnyRole('ADMIN', 'SUPER_ADMIN');
+            if (!hasAccess) return;
+        }
+
+        async function generateReport(type) {
+            const loading = document.getElementById('loading');
+            const content = document.getElementById('content');
+            
+            loading.style.display = 'block';
+            content.style.display = 'none';
+            content.innerHTML = '';
+
+            try {
+                let reportData;
+                
+                switch(type) {
+                    case 'gmv':
+                        reportData = await api.getGMVReport();
+                        displayGMVReport(reportData);
+                        break;
+                    
+                    case 'revenue':
+                        reportData = await api.getRevenueReport();
+                        displayRevenueReport(reportData);
+                        break;
+                    
+                    case 'user-growth':
+                        reportData = await api.getUserGrowthReport();
+                        displayUserGrowthReport(reportData);
+                        break;
+                    
+                    case 'seller-performance':
+                        reportData = await api.getSellerPerformanceReport();
+                        displaySellerPerformanceReport(reportData);
+                        break;
+                    
+                    case 'product-metrics':
+                        reportData = await api.getProductMetricsReport();
+                        displayProductMetricsReport(reportData);
+                        break;
+                    
+                    case 'financial-audit':
+                        reportData = await api.getFinancialAuditReport();
+                        displayFinancialAuditReport(reportData);
+                        break;
+                    
+                    case 'disputes':
+                        alert('Disputes module not yet implemented. Please implement apps/disputes/models.py first.');
+                        loading.style.display = 'none';
+                        return;
+                    
+                    case 'logistics':
+                        alert('Logistics tracking not yet implemented. Please implement logistics tracking models first.');
+                        loading.style.display = 'none';
+                        return;
+                    
+                    case 'custom':
+                        showCustomQueryBuilder();
+                        loading.style.display = 'none';
+                        return;
+                    
+                    default:
+                        throw new Error(`Unknown report type: ${type}`);
+                }
+
+                content.style.display = 'block';
+            } catch (err) {
+                console.error('Report generation error:', err);
+                alert(`Failed to generate report: ${err.message}`);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

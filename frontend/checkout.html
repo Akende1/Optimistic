@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout — Optimistic</title>
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/layout.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <link rel="stylesheet" href="/static/css/mobile.css">
+    <link rel="stylesheet" href="/static/css/responsive.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="nav-logo">Optimistic</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="products.html">Products</a></li>
+                <li><a href="cart.html">🛒 Cart</a></li>
+                <li><a href="profile.html">Profile</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Checkout Section -->
+    <section class="section">
+        <div class="container">
+            <h1 class="section-title">💳 Checkout</h1>
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 3rem;">
+                <div>
+                    <div class="card" style="margin-bottom: 2rem;">
+                        <h3 style="margin-bottom: 1.5rem;">📍 Delivery Information</h3>
+                        <form id="checkout-form">
+                            <div class="form-group">
+                                <label>Full Name</label>
+                                <input type="text" class="form-control" id="full-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Phone Number</label>
+                                <input type="tel" class="form-control" id="phone" placeholder="+260..." required>
+                            </div>
+                            <div class="form-group">
+                                <label>Delivery Address</label>
+                                <textarea class="form-control" id="address" rows="3" placeholder="Street address, area, city" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Additional Notes (Optional)</label>
+                                <textarea class="form-control" id="notes" rows="2" placeholder="Any special instructions..."></textarea>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card">
+                        <h3 style="margin-bottom: 1.5rem;">💰 Payment Method</h3>
+                        <div style="display: grid; gap: 1rem;">
+                            <label style="display: flex; align-items: center; padding: 1rem; border: 2px solid var(--border-color); border-radius: 0.75rem; cursor: pointer; transition: all 0.3s;">
+                                <input type="radio" name="payment" value="mtn" checked style="margin-right: 1rem;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 700;">MTN Mobile Money</div>
+                                    <div style="color: var(--text-light); font-size: 0.875rem;">Pay with MTN MoMo</div>
+                                </div>
+                                <div style="font-size: 2rem;">📱</div>
+                            </label>
+                            <label style="display: flex; align-items: center; padding: 1rem; border: 2px solid var(--border-color); border-radius: 0.75rem; cursor: pointer; transition: all 0.3s;">
+                                <input type="radio" name="payment" value="airtel" style="margin-right: 1rem;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 700;">Airtel Money</div>
+                                    <div style="color: var(--text-light); font-size: 0.875rem;">Pay with Airtel Money</div>
+                                </div>
+                                <div style="font-size: 2rem;">📱</div>
+                            </label>
+                            <label style="display: flex; align-items: center; padding: 1rem; border: 2px solid var(--border-color); border-radius: 0.75rem; cursor: pointer; transition: all 0.3s;">
+                                <input type="radio" name="payment" value="cash" style="margin-right: 1rem;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 700;">Cash on Delivery</div>
+                                    <div style="color: var(--text-light); font-size: 0.875rem;">Pay when you receive</div>
+                                </div>
+                                <div style="font-size: 2rem;">💵</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="card" style="position: sticky; top: 100px;">
+                        <h3 style="margin-bottom: 1.5rem;">📦 Order Summary</h3>
+                        <div id="order-items" style="margin-bottom: 1.5rem; max-height: 300px; overflow-y: auto;"></div>
+                        <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span>Subtotal:</span>
+                                <span id="subtotal">K0.00</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span>Delivery Fee:</span>
+                                <span id="delivery">K50.00</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 1.5rem; font-weight: 700; margin-bottom: 2rem;">
+                            <span>Total:</span>
+                            <span id="total" style="color: var(--primary-color);">K0.00</span>
+                        </div>
+                        <button class="btn btn-primary" onclick="placeOrder()" style="width: 100%;">
+                            Place Order
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 Optimistic · Proudly Built for Zambia 🇿🇲</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/api.js"></script>
+    <script>
+        const DELIVERY_FEE = 50;
+        let cartItems = [];
+
+        async function loadOrderSummary() {
+            if (!api.isAuthenticated()) {
+                window.location.href = 'login.html?redirect=checkout.html';
+                return;
+            }
+
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            
+            if (cart.length === 0) {
+                alert('Your cart is empty');
+                window.location.href = 'products.html';
+                return;
+            }
+
+            try {
+                const promises = cart.map(item => api.getProduct(item.id));
+                const products = await Promise.all(promises);
+                
+                cartItems = cart.map((item, index) => ({
+                    ...item,
+                    product: products[index]
+                }));
+                
+                renderOrderItems();
+                updateSummary();
+            } catch (error) {
+                console.error('Error loading order:', error);
+                alert('Failed to load order details');
+            }
+        }
+
+        function renderOrderItems() {
+            const container = document.getElementById('order-items');
+            container.innerHTML = cartItems.map(item => `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600;">${item.product.name}</div>
+                        <div style="color: var(--text-light); font-size: 0.875rem;">Qty: ${item.quantity}</div>
+                    </div>
+                    <div style="font-weight: 700; color: var(--primary-color);">K${(item.product.price * item.quantity).toFixed(2)}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateSummary() {
+            const subtotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+            const total = subtotal + DELIVERY_FEE;
+            
+            document.getElementById('subtotal').textContent = `K${subtotal.toFixed(2)}`;
+            document.getElementById('delivery').textContent = `K${DELIVERY_FEE.toFixed(2)}`;
+            document.getElementById('total').textContent = `K${total.toFixed(2)}`;
+        }
+
+        async function placeOrder() {
+            const form = document.getElementById('checkout-form');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const fullName = document.getElementById('full-name').value;
+            const phone = document.getElementById('phone').value;
+            const address = document.getElementById('address').value;
+            const notes = document.getElementById('notes').value;
+            const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+            
+            const subtotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+            const total = subtotal + DELIVERY_FEE;
+
+            try {
+                // Create order via API
+                const orderData = {
+                    total_amount: total,
+                    delivery_address: address,
+                    delivery_phone: phone,
+                    delivery_name: fullName,
+                    payment_method: paymentMethod,
+                    notes: notes,
+                    items: cartItems.map(item => ({
+                        product_id: item.product.id,
+                        quantity: item.quantity,
+                        price: item.product.price
+                    }))
+                };
+
+                // For now, simulate success
+                console.log('Order data:', orderData);
+                
+                // Clear cart
+                localStorage.removeItem('cart');
+                
+                // Show success and redirect
+                alert('🎉 Order placed successfully! You will be redirected to your orders page.');
+                window.location.href = 'orders.html';
+                
+            } catch (error) {
+                console.error('Error placing order:', error);
+                alert('Failed to place order. Please try again.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadOrderSummary();
+        });
+    </script>
+</body>
+</html>

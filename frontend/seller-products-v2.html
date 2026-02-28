@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Products — Optimistic</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6a11cb;
+            --secondary: #2575fc;
+            --light: #f8f7ff;
+            --dark: #1a1a2e;
+            --success: #28a745;
+            --warning: #ff9500;
+            --danger: #ff4757;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #fff;
+            color: var(--dark);
+            line-height: 1.6  }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 15px rgba(106, 17, 203, 0.2);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .logo i {
+            margin-right: 10px;
+        }
+
+        /* Navigation */
+        nav {
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 0;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+            background: rgba(106, 17, 203, 0.05);
+        }
+
+        .nav-links a.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: rgba(106, 17, 203, 0.05);
+        }
+
+        .nav-links a.logout {
+            color: var(--danger);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(106, 17, 203, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 13px;
+        }
+
+        /* Products Grid */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(106, 17, 203, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #f0f0f0;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(106, 17, 203, 0.15);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+
+        .product-info {
+            padding: 20px;
+        }
+
+        .product-title {
+            font-weight: 600;
+            font-size: 18px;
+            color: var(--dark);
+            margin-bottom: 10px;
+        }
+
+        .product-price {
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .product-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .product-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #d1f4e0;
+            color: #0e6b3a;
+        }
+
+        .status-draft {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        .status-suspended {
+            background: #ffe0e0;
+            color: #c41e3a;
+        }
+
+        .stock-low {
+            color: var(--danger);
+        }
+
+        .stock-ok {
+            color: var(--success);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+        }
+
+        .empty-state i {
+            font-size: 80px;
+            margin-bottom: 20px;
+            color: #ddd;
+        }
+
+        .empty-state h3 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--primary);
+        }
+
+        .loading i {
+            font-size: 48px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                flex-wrap: wrap;
+            }
+
+            .nav-links a {
+                font-size: 12px;
+                padding: 12px 10px;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .page-header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-store"></i>
+                Seller Center
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-content">
+            <ul class="nav-links">
+                <li><a href="seller-dashboard-v2.html"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="seller-products-v2.html" class="active"><i class="fas fa-box"></i> Products</a></li>
+                <li><a href="add-product.html"><i class="fas fa-plus-circle"></i> Add Product</a></li>
+                <li><a href="seller-orders-v2.html"><i class="fas fa-shopping-cart"></i> Orders</a></li>
+                <li><a href="seller-store-v2.html"><i class="fas fa-store-alt"></i> Store</a></li>
+                <li><a href="seller-earnings-v2.html"><i class="fas fa-dollar-sign"></i> Earnings</a></li>
+                <li><a href="seller-disputes-v2.html"><i class="fas fa-balance-scale"></i> Disputes</a></li>
+                <li><a href="seller-profile-v2.html"><i class="fas fa-user-circle"></i> Profile</a></li>
+                <li><a href="#" onclick="api.logout()" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <div class="page-header">
+            <div>
+                <h1>My Products</h1>
+                <p style="color: #666;">Manage your product listings</p>
+            </div>
+            <a href="add-product.html" class="btn btn-primary">
+                <i class="fas fa-plus-circle"></i> Add Product
+            </a>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading" class="loading">
+            <i class="fas fa-spinner"></i>
+            <p>Loading products...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty" class="empty-state" style="display: none;">
+            <i class="fas fa-box-open"></i>
+            <h3>No products yet</h3>
+            <p>Start selling by adding your first product</p>
+            <a href="add-product.html" class="btn btn-primary" style="margin-top: 20px;">
+                <i class="fas fa-plus-circle"></i> Add Product
+            </a>
+        </div>
+
+        <!-- Products Grid -->
+        <div id="products-grid" class="products-grid" style="display: none;">
+            <!-- Products will be loaded here -->
+        </div>
+    </div>
+
+    <script src="/static/js/api.js?v=20260116"></script>
+    <script>
+        function getStatusBadge(status) {
+            const map = {
+                'ACTIVE': '<span class="status-badge status-active">Active</span>',
+                'DRAFT': '<span class="status-badge status-draft">Draft</span>',
+                'SUSPENDED': '<span class="status-badge status-suspended">Suspended</span>',
+                'PENDING_APPROVAL': '<span class="status-badge status-draft">Pending</span>',
+                'ARCHIVED': '<span class="status-badge status-draft">Archived</span>'
+            };
+            return map[status] || `<span class="status-badge status-draft">${status}</span>`;
+        }
+
+        async function loadProducts() {
+            const loading = document.getElementById('loading');
+            const empty = document.getElementById('empty');
+            const grid = document.getElementById('products-grid');
+
+            try {
+                if (typeof ZuStoreAPI === 'undefined') {
+                    throw new Error('API script failed to load');
+                }
+                
+                const api = new ZuStoreAPI();
+                
+                if (!api.isAuthenticated()) {
+                    location.href = 'login.html';
+                    return;
+                }
+
+                const data = await api.request('/products/');
+                const products = data.results || [];
+
+                loading.style.display = 'none';
+
+                if (products.length === 0) {
+                    empty.style.display = 'block';
+                    return;
+                }
+
+                grid.innerHTML = products.map(p => {
+                    const stockClass = p.stock < 10 ? 'stock-low' : 'stock-ok';
+                    const imageUrl = p.primary_image || 'https://via.placeholder.com/280x220?text=No+Image';
+                    
+                    return `
+                        <div class="product-card">
+                            <img src="${imageUrl}" alt="${p.name}" class="product-image" onerror="this.src='https://via.placeholder.com/280x220?text=No+Image'">
+                            <div class="product-info">
+                                <div class="product-title">${p.name}</div>
+                                <div class="product-price">K${parseFloat(p.price).toFixed(2)}</div>
+                                <div class="product-meta">
+                                    <span class="${stockClass}">
+                                        <i class="fas fa-warehouse"></i> ${p.stock} in stock
+                                    </span>
+                                    <span>${getStatusBadge(p.status)}</span>
+                                </div>
+                                <div class="product-meta">
+                                    <span><i class="fas fa-shopping-bag"></i> 0 sold</span>
+                                    <span><i class="fas fa-eye"></i> 0 views</span>
+                                </div>
+                                <div class="product-actions">
+                                    <button class="btn btn-secondary btn-small" onclick="editProduct(${p.id})">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                    <button class="btn btn-secondary btn-small" onclick="deactivateProduct(${p.id}, '${p.name}')">
+                                        <i class="fas fa-toggle-off"></i> Deactivate
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                grid.style.display = 'grid';
+
+            } catch (err) {
+                console.error('Failed to load products:', err);
+                loading.style.display = 'none';
+                alert('Error loading products: ' + err.message);
+            }
+        }
+
+        function editProduct(id) {
+            // TODO: Navigate to edit page
+            alert(`Edit product ${id} - Feature coming soon`);
+        }
+
+        async function deactivateProduct(id, name) {
+            if (!confirm(`Deactivate "${name}"? Product will be hidden from buyers.`)) return;
+
+            try {
+                // TODO: Implement deactivate API call
+                alert('Deactivate feature coming soon');
+            } catch (err) {
+                alert('Failed to deactivate: ' + err.message);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadProducts);
+    </script>
+</body>
+</html>

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products - Optimistic</title>
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/layout.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <link rel="stylesheet" href="/static/css/mobile.css">
+    <link rel="stylesheet" href="/static/css/responsive.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="nav-logo">Optimistic</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="products.html" style="color: var(--primary-color);">Products</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="contact.html">Contact</a></li>
+                <li id="dashboard-nav" style="display: none;"><a href="buyer-dashboard.html" id="dashboard-link">📊 Dashboard</a></li>
+                <li><a href="wishlist.html">❤️ Wishlist</a></li>
+                <li><a href="cart.html">🛒 Cart <span class="cart-badge" id="cart-count">0</span></a></li>
+                <li><a href="login.html" id="auth-link">Login</a></li>
+            </ul>
+        </div>
+    </nav>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <section class="page-header py-12 mobile:py-8">
+        <div class="container px-6 mobile:px-4">
+            <h1 class="text-center text-4xl md:text-5xl font-extrabold mb-4 mobile:text-3xl mobile:mb-3">Browse Products</h1>
+            <p class="text-center text-light text-lg mobile:text-base">Discover amazing products from verified Zambian sellers</p>
+        </div>
+    </section>
+
+    <!-- Filters & Search -->
+    <section class="filters-section py-6 mobile:py-4">
+        <div class="container px-6 mobile:px-4">
+            <!-- Search Bar -->
+            <div class="search-bar flex gap-2 mb-6 mobile:mb-4">
+                <input 
+                    type="search" 
+                    id="searchInput" 
+                    class="form-control flex-1" 
+                    placeholder="Search products..."
+                    aria-label="Search products"
+                >
+                <button class="btn btn-primary px-6 mobile:px-4" id="searchBtn">
+                    <span class="mobile:hidden">Search</span>
+                    <span class="hidden mobile:inline">🔍</span>
+                </button>
+            </div>
+
+            <!-- Category Filter (Horizontal scroll on mobile) -->
+            <div class="category-list flex gap-2 overflow-x-auto pb-4 mb-4 mobile:pb-2 mobile:mb-3" id="categoryFilter">
+                <button class="btn btn-outline active" data-category="">All</button>
+                <!-- Categories loaded dynamically -->
+            </div>
+
+            <!-- Sort & Filter Controls -->
+            <div class="filter-controls flex gap-3 items-center mb-4 mobile:flex-col mobile:items-stretch">
+                <select id="sortSelect" class="form-select flex-1 mobile:w-full">
+                    <option value="-created_at">Newest First</option>
+                    <option value="price">Price: Low to High</option>
+                    <option value="-price">Price: High to Low</option>
+                    <option value="name">Name: A-Z</option>
+                </select>
+
+                <button class="btn btn-outline mobile:w-full" id="filterToggle">
+                    Filters <span id="filterCount"></span>
+                </button>
+            </div>
+
+            <!-- Advanced Filters (Collapsible on mobile) -->
+            <div class="advanced-filters" id="advancedFilters" style="display: none;">
+                <div class="form-row grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="form-group">
+                        <label class="form-label">Min Price (ZMW)</label>
+                        <input type="number" id="minPrice" class="form-control" placeholder="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Max Price (ZMW)</label>
+                        <input type="number" id="maxPrice" class="form-control" placeholder="Any" min="0">
+                    </div>
+                </div>
+                <div class="form-group flex gap-3 mobile:flex-col">
+                    <button class="btn btn-primary mobile:w-full" id="applyFilters">Apply Filters</button>
+                    <button class="btn btn-outline mobile:w-full" id="clearFilters">Clear</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Products Grid -->
+    <section class="products-section py-8 mobile:py-6">
+        <div class="container px-6 mobile:px-4">
+            <!-- Loading State -->
+            <div class="loading-spinner text-center py-12 mobile:py-8" id="loadingSpinner">
+                <div class="spinner mx-auto"></div>
+                <p class="mt-4">Loading products...</p>
+            </div>
+
+            <!-- Products Grid -->
+            <div class="product-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mobile:gap-4" id="productGrid">
+                <!-- Products loaded dynamically -->
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state text-center py-12 mobile:py-8" id="emptyState" style="display: none;">
+                <h3 class="text-2xl font-bold mb-3 mobile:text-xl">No products found</h3>
+                <p class="text-base mb-6 mobile:text-sm mobile:mb-4">Try adjusting your filters or search terms</p>
+                <button class="btn btn-primary" id="clearAllFilters">Clear All Filters</button>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination" id="pagination">
+                <!-- Pagination loaded dynamically -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-columns">
+                <div class="footer-column">
+                    <h4>Optimistic</h4>
+                    <p>Zambia's trusted online marketplace</p>
+                </div>
+                <div class="footer-column">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="products.html">Products</a></li>
+                        <li><a href="register.html">Become a Seller</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Contact</h4>
+                    <p>Email: support@zustore.zm</p>
+                    <p>Phone: +260 XXX XXX XXX</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Optimistic. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script>
+        // Initialize API client
+        const api = new ZuStoreAPI();
+
+        // State
+        let currentPage = 1;
+        let currentCategory = '';
+        let currentSearch = '';
+        let currentFilters = {};
+
+        // DOM Elements
+        const productGrid = document.getElementById('productGrid');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const emptyState = document.getElementById('emptyState');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const searchInput = document.getElementById('searchInput');
+        const sortSelect = document.getElementById('sortSelect');
+        const navbarToggle = document.querySelector('.navbar-toggle');
+        const navbarCollapse = document.querySelector('.navbar-collapse');
+
+        // Mobile menu toggle
+        if (navbarToggle) {
+            navbarToggle.addEventListener('click', () => {
+                navbarCollapse.classList.toggle('active');
+            });
+        }
+
+        // Load categories
+        async function loadCategories() {
+            try {
+                const categories = await api.getCategories();
+                categoryFilter.innerHTML = '<button class="btn btn-outline active" data-category="">All</button>';
+                
+                categories.forEach(category => {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn btn-outline';
+                    btn.textContent = category.name;
+                    btn.dataset.category = category.id;
+                    btn.addEventListener('click', () => filterByCategory(category.id, btn));
+                    categoryFilter.appendChild(btn);
+                });
+            } catch (error) {
+                console.error('Failed to load categories:', error);
+            }
+        }
+
+        // Filter by category
+        function filterByCategory(categoryId, button) {
+            currentCategory = categoryId;
+            currentPage = 1;
+            
+            // Update active button
+            document.querySelectorAll('.category-list .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            button.classList.add('active');
+            
+            loadProducts();
+        }
+
+        // Load products
+        async function loadProducts() {
+            try {
+                loadingSpinner.style.display = 'block';
+                productGrid.style.display = 'none';
+                emptyState.style.display = 'none';
+
+                // Build query parameters
+                const params = {
+                    page: currentPage,
+                    ordering: sortSelect.value
+                };
+
+                if (currentCategory) params.category = currentCategory;
+                if (currentSearch) params.search = currentSearch;
+                if (currentFilters.minPrice) params.min_price = currentFilters.minPrice;
+                if (currentFilters.maxPrice) params.max_price = currentFilters.maxPrice;
+
+                const data = await api.getProducts(params);
+
+                loadingSpinner.style.display = 'none';
+
+                if (data.results && data.results.length > 0) {
+                    renderProducts(data.results);
+                    renderPagination(data);
+                    productGrid.style.display = 'grid';
+                } else {
+                    emptyState.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Failed to load products:', error);
+                loadingSpinner.style.display = 'none';
+                emptyState.style.display = 'block';
+            }
+        }
+
+        // Render products
+        function renderProducts(products) {
+            productGrid.innerHTML = products.map(product => `
+                <div class="product-card">
+                    <a href="product.html?id=${product.id}">
+                        <img 
+                            src="${product.images && product.images[0] ? product.images[0].image : 'https://via.placeholder.com/300'}" 
+                            alt="${product.name}"
+                            class="product-image"
+                            loading="lazy"
+                        >
+                        <div class="product-info">
+                            <h3 class="product-title">${product.name}</h3>
+                            <p class="product-price">K${product.price}</p>
+                            <p class="product-meta">${product.seller_name || 'Unknown Seller'}</p>
+                            ${product.stock > 0 ? 
+                                `<span class="badge badge-success">In Stock</span>` : 
+                                `<span class="badge badge-danger">Out of Stock</span>`
+                            }
+                        </div>
+                    </a>
+                </div>
+            `).join('');
+        }
+
+        // Render pagination
+        function renderPagination(data) {
+            const pagination = document.getElementById('pagination');
+            const totalPages = Math.ceil(data.count / 20); // Assuming 20 per page
+            
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let html = '<div class="pagination-buttons">';
+            
+            if (data.previous) {
+                html += `<button class="btn btn-outline" onclick="changePage(${currentPage - 1})">Previous</button>`;
+            }
+            
+            html += `<span class="pagination-info">Page ${currentPage} of ${totalPages}</span>`;
+            
+            if (data.next) {
+                html += `<button class="btn btn-outline" onclick="changePage(${currentPage + 1})">Next</button>`;
+            }
+            
+            html += '</div>';
+            pagination.innerHTML = html;
+        }
+
+        // Change page
+        function changePage(page) {
+            currentPage = page;
+            loadProducts();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Search
+        document.getElementById('searchBtn')?.addEventListener('click', () => {
+            currentSearch = searchInput.value.trim();
+            currentPage = 1;
+            loadProducts();
+        });
+
+        searchInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                currentSearch = searchInput.value.trim();
+                currentPage = 1;
+                loadProducts();
+            }
+        });
+
+        // Sort
+        sortSelect?.addEventListener('change', () => {
+            currentPage = 1;
+            loadProducts();
+        });
+
+        // Filter toggle
+        document.getElementById('filterToggle')?.addEventListener('click', () => {
+            const advancedFilters = document.getElementById('advancedFilters');
+            advancedFilters.style.display = advancedFilters.style.display === 'none' ? 'block' : 'none';
+        });
+
+        // Apply filters
+        document.getElementById('applyFilters')?.addEventListener('click', () => {
+            currentFilters = {
+                minPrice: document.getElementById('minPrice').value,
+                maxPrice: document.getElementById('maxPrice').value
+            };
+            currentPage = 1;
+            loadProducts();
+        });
+
+        // Clear filters
+        document.getElementById('clearFilters')?.addEventListener('click', () => {
+            document.getElementById('minPrice').value = '';
+            document.getElementById('maxPrice').value = '';
+            currentFilters = {};
+            currentPage = 1;
+            loadProducts();
+        });
+
+        document.getElementById('clearAllFilters')?.addEventListener('click', () => {
+            searchInput.value = '';
+            document.getElementById('minPrice').value = '';
+            document.getElementById('maxPrice').value = '';
+            sortSelect.value = '-created_at';
+            currentSearch = '';
+            currentCategory = '';
+            currentFilters = {};
+            currentPage = 1;
+            
+            // Reset category buttons
+            document.querySelectorAll('.category-list .btn').forEach((btn, index) => {
+                btn.classList.toggle('active', index === 0);
+            });
+            
+            loadProducts();
+        });
+
+        // Update auth link
+        function updateAuthLink() {
+            const authLink = document.getElementById('auth-link');
+            const dashboardLink = document.getElementById('dashboard-link');
+            const dashboardNav = document.getElementById('dashboard-nav');
+            const cartCount = document.getElementById('cart-count');
+            
+            if (api.isAuthenticated()) {
+                authLink.textContent = 'Logout';
+                authLink.href = '#';
+                authLink.onclick = (e) => {
+                    e.preventDefault();
+                    api.logout();
+                };
+                
+                dashboardNav.style.display = 'block';
+                dashboardLink.href = 'buyer-dashboard.html'; // Default
+                dashboardLink.textContent = '📊 Dashboard';
+                
+                api.getProfile().then(user => {
+                    if (user.role === 'ADMIN') {
+                        dashboardLink.href = 'admin-dashboard.html';
+                        dashboardLink.textContent = '🔧 Admin';
+                    } else if (user.role === 'SELLER') {
+                        dashboardLink.href = 'seller-dashboard.html';
+                        dashboardLink.textContent = '🏪 Seller';
+                    } else {
+                        dashboardLink.href = 'buyer-dashboard.html';
+                        dashboardLink.textContent = '📊 Account';
+                    }
+                }).catch(() => {});
+            } else {
+                authLink.textContent = 'Login';
+                authLink.href = 'login.html';
+                authLink.onclick = null;
+                dashboardNav.style.display = 'none';
+            }
+            
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            cartCount.textContent = cart.length;
+        }
+
+        function logout() {
+            api.logout();
+        }
+
+        // Real-time cart counter update
+        function startCartWatcher() {
+            setInterval(() => {
+                const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                const cartCount = document.getElementById('cart-count');
+                if (cartCount) {
+                    cartCount.textContent = cart.length;
+                }
+            }, 2000);
+        }
+
+        // Listen for storage changes
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'cart') {
+                const cart = JSON.parse(e.newValue || '[]');
+                const cartCount = document.getElementById('cart-count');
+                if (cartCount) {
+                    cartCount.textContent = cart.length;
+                }
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCategories();
+            loadProducts();
+            updateAuthLink();
+            startCartWatcher();
+        });
+    </script>
+</body>
+</html>

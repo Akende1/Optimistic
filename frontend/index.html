@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimistic — Zambia's Premier Online Marketplace</title>
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/layout.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <link rel="stylesheet" href="/static/css/mobile.css">
+    <link rel="stylesheet" href="/static/css/responsive.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation (auto-populated by navigation.js) -->
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="nav-logo">Optimistic</a>
+            <ul class="nav-links">
+                <!-- Navigation items will be dynamically loaded -->
+                <li><a href="index.html">🏠 Home</a></li>
+                <li><a href="products.html">🛍️ Products</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero text-center py-12 mobile:py-8">
+        <div class="container px-6 mobile:px-4">
+            <h1 class="text-4xl md:text-5xl font-extrabold mb-4 mobile:text-3xl">🇿🇲 Welcome to Optimistic</h1>
+            <p class="text-xl md:text-2xl font-semibold mb-3 mobile:text-lg">Zambia's Premier Online Marketplace</p>
+            <p class="text-base md:text-lg opacity-90 max-w-3xl mx-auto mobile:text-sm">Discover quality products from trusted sellers across Zambia. Shop electronics, fashion, home goods, and more — all in one place.</p>
+        </div>
+    </section>
+
+    <!-- Categories -->
+    <section class="section py-8 mobile:py-6">
+        <div class="container px-6 mobile:px-4">
+            <h2 class="section-title text-3xl md:text-4xl font-bold mb-6 mobile:text-2xl mobile:mb-4">Shop by Category</h2>
+            <div class="categories flex flex-wrap gap-3 mobile:gap-2" id="categories">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Products -->
+    <section class="section py-8 mobile:py-6">
+        <div class="container px-6 mobile:px-4">
+            <h2 class="section-title text-3xl md:text-4xl font-bold mb-6 mobile:text-2xl mobile:mb-4">Featured Products</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mobile:gap-4 product-grid" id="products">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer py-12 mobile:py-8">
+        <div class="container px-6 mobile:px-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mobile:gap-6 mb-8 text-left">
+                <div>
+                    <h3 class="text-xl font-bold mb-4 mobile:text-lg mobile:mb-3">Optimistic</h3>
+                    <p class="opacity-80">Zambia's Premier Online Marketplace</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4 mobile:mb-3">Shop</h4>
+                    <ul class="space-y-2">
+                        <li><a href="products.html" class="text-white opacity-80 hover:opacity-100">Browse Products</a></li>
+                        <li><a href="cart.html" class="text-white opacity-80 hover:opacity-100">Shopping Cart</a></li>
+                        <li><a href="orders.html" class="text-white opacity-80 hover:opacity-100">My Orders</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4 mobile:mb-3">Sell</h4>
+                    <ul class="space-y-2">
+                        <li><a href="seller-dashboard.html" class="text-white opacity-80 hover:opacity-100">Seller Dashboard</a></li>
+                        <li><a href="add-product.html" class="text-white opacity-80 hover:opacity-100">Add Product</a></li>
+                        <li><a href="register.html" class="text-white opacity-80 hover:opacity-100">Become a Seller</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4 mobile:mb-3">Company</h4>
+                    <ul class="space-y-2">
+                        <li><a href="about.html" class="text-white opacity-80 hover:opacity-100">About Us</a></li>
+                        <li><a href="contact.html" class="text-white opacity-80 hover:opacity-100">Contact</a></li>
+                        <li><a href="profile.html" class="text-white opacity-80 hover:opacity-100">My Account</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-white/10 pt-6 text-center">
+                <p class="opacity-90">© 2026 Optimistic · Proudly Built for Zambia 🇿🇲</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/realtime.js"></script>
+    <script>
+        // Load categories
+        async function loadCategories() {
+            try {
+                const data = await api.getCategories();
+                const container = document.getElementById('categories');
+                
+                if (data.results && data.results.length > 0) {
+                    container.innerHTML = data.results.map(cat => `
+                        <a href="products.html?category=${cat.id}" class="category-pill">
+                            ${cat.name}
+                        </a>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p>No categories available</p>';
+                }
+            } catch (error) {
+                console.error('Error loading categories:', error);
+                document.getElementById('categories').innerHTML = 
+                    '<p class="alert-error">Failed to load categories</p>';
+            }
+        }
+
+        // Load featured products
+        async function loadProducts() {
+            try {
+                const data = await api.getProducts({ status: 'ACTIVE' });
+                const container = document.getElementById('products');
+                
+                if (data.results && data.results.length > 0) {
+                    container.innerHTML = data.results.slice(0, 8).map(product => `
+                        <div class="product-card">
+                            <div class="product-image">
+                                <span>📦 ${product.category_name || 'Product'}</span>
+                            </div>
+                            <div class="product-info">
+                                <h3 class="product-name">${product.name}</h3>
+                                <div class="product-price">K${product.price}</div>
+                                <div class="product-seller">by ${product.seller_name}</div>
+                                <div class="product-stock">
+                                    ${product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+                                </div>
+                                <a href="product-detail.html?id=${product.id}" class="btn btn-primary mt-2" style="display:block; text-align:center;">
+                                    View Details
+                                </a>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state" style="grid-column: 1/-1;">
+                            <h3>No products yet</h3>
+                            <p>Check back soon!</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading products:', error);
+                document.getElementById('products').innerHTML = 
+                    '<p class="alert-error" style="grid-column: 1/-1;">Failed to load products</p>';
+            }
+        }
+
+        // Update auth link
+        function updateAuthLink() {
+            const authLink = document.getElementById('auth-link');
+            const dashboardLink = document.getElementById('dashboard-link');
+            const dashboardNav = document.getElementById('dashboard-nav');
+            const cartCount = document.getElementById('cart-count');
+            
+            if (api.isAuthenticated()) {
+                authLink.textContent = 'Logout';
+                authLink.href = '#';
+                authLink.onclick = (e) => {
+                    e.preventDefault();
+                    api.logout();
+                };
+                
+                // Show dashboard link and set URL based on user role
+                dashboardNav.style.display = 'block';
+                dashboardLink.href = 'buyer-dashboard.html'; // Default
+                dashboardLink.textContent = '📊 Dashboard';
+                
+                // Determine dashboard URL based on user role
+                api.getProfile().then(user => {
+                    if (user.role === 'ADMIN') {
+                        dashboardLink.href = 'admin-dashboard.html';
+                        dashboardLink.textContent = '🔧 Admin Panel';
+                    } else if (user.role === 'SELLER') {
+                        dashboardLink.href = 'seller-dashboard.html';
+                        dashboardLink.textContent = '🏪 Seller Center';
+                    } else {
+                        dashboardLink.href = 'buyer-dashboard.html';
+                        dashboardLink.textContent = '📊 My Account';
+                    }
+                }).catch(() => {
+                    // Keep default if profile fetch fails
+                    dashboardLink.href = 'buyer-dashboard.html';
+                    dashboardLink.textContent = '📊 Dashboard';
+                });
+            } else {
+                authLink.textContent = 'Login';
+                authLink.href = 'login.html';
+                authLink.onclick = null;
+                dashboardNav.style.display = 'none';
+            }
+            
+            // Update cart count
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            cartCount.textContent = cart.length;
+        }
+
+        // Real-time cart counter update
+        function startCartWatcher() {
+            // Update cart count every 2 seconds
+            setInterval(() => {
+                const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                const cartCount = document.getElementById('cart-count');
+                if (cartCount) {
+                    cartCount.textContent = cart.length;
+                }
+            }, 2000);
+        }
+
+        // Listen for storage changes (cart updates from other tabs)
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'cart') {
+                const cart = JSON.parse(e.newValue || '[]');
+                const cartCount = document.getElementById('cart-count');
+                if (cartCount) {
+                    cartCount.textContent = cart.length;
+                }
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCategories();
+            loadProducts();
+            updateAuthLink();
+            startCartWatcher();
+        });
+    </script>
+    
+    <!-- Smart Navigation System -->
+    <script src="/static/js/navigation.js"></script>
+</body>
+</html>

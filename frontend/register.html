@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register — Optimistic</title>
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/layout.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <link rel="stylesheet" href="/static/css/mobile.css">
+    <link rel="stylesheet" href="/static/css/responsive.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="nav-logo">Optimistic</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="products.html">Products</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="section">
+        <div class="container" style="max-width: 500px;">
+            <h1 class="text-center">Create Account</h1>
+            
+            <div id="message"></div>
+
+            <div class="card">
+                <form id="register-form">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="role">I want to:</label>
+                        <select id="role" class="form-control">
+                            <option value="BUYER">Buy products</option>
+                            <option value="SELLER">Sell products</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        Register
+                    </button>
+                </form>
+
+                <p class="text-center mt-3">
+                    Already have an account? <a href="login.html" style="color: var(--primary-color);">Login</a>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Optimistic. Built for Zambia.</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/api.js"></script>
+    <script>
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const role = document.getElementById('role').value;
+            const messageDiv = document.getElementById('message');
+
+            try {
+                const data = await api.register(username, email, password, role);
+                messageDiv.innerHTML = '<div class="alert alert-success">Registration successful! Redirecting...</div>';
+                
+                // Redirect to appropriate dashboard based on role
+                let redirectUrl = 'index.html';
+                if (role === 'SELLER') {
+                    redirectUrl = 'seller-dashboard.html';
+                } else if (role === 'BUYER') {
+                    redirectUrl = 'buyer-dashboard.html';
+                }
+                
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 1000);
+            } catch (error) {
+                messageDiv.innerHTML = `<div class="alert alert-error">Registration failed: ${error.message}</div>`;
+            }
+        });
+    </script>
+</body>
+</html>
