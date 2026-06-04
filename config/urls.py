@@ -54,16 +54,10 @@ urlpatterns = [
     path('admin-settings-v2.html', TemplateView.as_view(template_name='admin-settings-v2.html'), name='admin-settings-v2'),
     path('admin-audit-logs-v2.html', TemplateView.as_view(template_name='admin-audit-logs-v2.html'), name='admin-audit-logs-v2'),
     
-    # API endpoints
+    # API endpoints (backward-compatible + versioned namespace)
     path('admin/', admin.site.urls),
-    path('api/auth/', include('apps.accounts.urls')),
-    path('api/', include('apps.products.urls')),
-    path('api/', include('apps.sellers.urls')),
-    path('api/', include('apps.orders.urls')),
-    path('api/', include('apps.logistics.urls')),
-    path('api/', include('apps.notifications.urls')),
-    path('api/', include('apps.reviews.urls')),
-    path('api/admin/', include('apps.common.urls')),  # Admin moderation endpoints
+    path('api/', include('config.api_urls')),
+    path('api/v1/', include('config.api_urls')),
 ]
 
 # Serve media files in development

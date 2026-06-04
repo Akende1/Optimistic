@@ -186,7 +186,7 @@ class RoleGuard {
         // Get current user
         let user;
         try {
-            user = await this.api.request('/auth/me/');
+            user = await this.api.getProfile();
         } catch (error) {
             console.error('Failed to fetch user:', error);
             this.redirectToLogin();

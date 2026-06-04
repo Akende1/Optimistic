@@ -160,8 +160,9 @@ REST_FRAMEWORK = {
     # Pagination: Limit response size
     # PageNumberPagination: ?page=1, ?page=2, etc.
     # PAGE_SIZE: Items per page (20 is reasonable for mobile)
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'DEFAULT_PAGINATION_CLASS': 'apps.common.api_contract.StandardPageNumberPagination',
     'PAGE_SIZE': 20,  # Balance: fewer API calls vs smaller payloads
+    'EXCEPTION_HANDLER': 'apps.common.api_contract.standardized_exception_handler',
 }
 
 # JWT Settings - Token Configuration

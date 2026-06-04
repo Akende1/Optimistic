@@ -35,7 +35,7 @@ class NavigationManager {
             if (!api.isAuthenticated()) {
                 return null;
             }
-            this.user = await api.request('/auth/me/');
+            this.user = await api.getProfile();
             return this.user;
         } catch (error) {
             console.warn('Failed to load user:', error);

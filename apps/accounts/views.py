@@ -7,6 +7,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from .serializers import UserSerializer, UserProfileSerializer
 from django.contrib.auth import get_user_model
+from apps.common.api_contract import success_response
 
 User = get_user_model()
 
@@ -22,11 +23,20 @@ def register(request):
     if serializer.is_valid():
         user = serializer.save()
         refresh = RefreshToken.for_user(user)
-        return Response({
-            'user': UserProfileSerializer(user).data,
-            'access': str(refresh.access_token),
-            'refresh': str(refresh),
-        }, status=status.HTTP_201_CREATED)
+        profile = UserProfileSerializer(user).data
+        access = str(refresh.access_token)
+        refresh_token = str(refresh)
+        return success_response(
+            data={
+                'user': profile,
+                'access': access,
+                'refresh': refresh_token,
+            },
+            status_code=status.HTTP_201_CREATED,
+            user=profile,
+            access=access,
+            refresh=refresh_token,
+        )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -41,24 +51,15 @@ def login(request):
     password = request.data.get('password')
     
     if not username or not password:
-        return Response(
-            {'error': 'Username and password required'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({'error': 'Username and password required'}, status=status.HTTP_400_BAD_REQUEST)
     
     user = authenticate(username=username, password=password)
     
     if user is None:
-        return Response(
-            {'error': 'Invalid credentials'},
-            status=status.HTTP_401_UNAUTHORIZED
-        )
+        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
     
     if not user.is_active:
-        return Response(
-            {'error': 'Account is disabled'},
-            status=status.HTTP_403_FORBIDDEN
-        )
+        return Response({'error': 'Account is disabled'}, status=status.HTTP_403_FORBIDDEN)
     
     # Determine redirect URL based on role
     role = 'SUPER_ADMIN' if user.is_superuser else user.role
@@ -71,12 +72,23 @@ def login(request):
     }
     
     refresh = RefreshToken.for_user(user)
-    return Response({
-        'user': UserProfileSerializer(user).data,
-        'access': str(refresh.access_token),
-        'refresh': str(refresh),
-        'redirect': redirect_urls.get(role, '/index.html'),
-    })
+    profile = UserProfileSerializer(user).data
+    access = str(refresh.access_token)
+    refresh_token = str(refresh)
+    redirect = redirect_urls.get(role, '/index.html')
+
+    return success_response(
+        data={
+            'user': profile,
+            'access': access,
+            'refresh': refresh_token,
+            'redirect': redirect,
+        },
+        user=profile,
+        access=access,
+        refresh=refresh_token,
+        redirect=redirect,
+    )
 
 
 @api_view(['GET'])
@@ -88,7 +100,7 @@ def profile(request):
     GET /api/auth/me/  (alias)
     """
     serializer = UserProfileSerializer(request.user, context={'request': request})
-    return Response(serializer.data)
+    return success_response(serializer.data)
 
 
 @api_view(['PATCH'])
@@ -113,4 +125,4 @@ def update_profile_picture(request):
     user.profile_picture = request.FILES['profile_picture']
     user.save()
     
-    return Response(UserProfileSerializer(user, context={'request': request}).data)
+    return success_response(UserProfileSerializer(user, context={'request': request}).data)

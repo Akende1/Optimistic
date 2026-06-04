@@ -30,7 +30,7 @@
  * - Token rotation enabled (limits stolen token lifespan)
  */
 
-const API_BASE = 'http://127.0.0.1:8000/api';
+const API_BASE = `${window.location.origin}/api/v1`;
 
 class ZuStoreAPI {
     /**
@@ -56,6 +56,15 @@ class ZuStoreAPI {
             headers['Authorization'] = `Bearer ${this.accessToken}`;
         }
         return headers;
+    }
+
+    extractErrorMessage(data) {
+        if (!data) return 'API request failed';
+        if (data.error?.message) return data.error.message;
+        if (typeof data.error === 'string') return data.error;
+        if (data.detail) return typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
+        if (data.message) return data.message;
+        return 'API request failed';
     }
 
     /**
@@ -116,9 +125,9 @@ class ZuStoreAPI {
                 data = { error: 'Invalid response from server' };
             }
 
-            // Handle errors
-            if (!response.ok) {
-                const errorMessage = data.error || data.detail || data.message || 'API request failed';
+            // Handle HTTP errors and standardized envelope errors
+            if (!response.ok || data?.success === false) {
+                const errorMessage = this.extractErrorMessage(data);
                 const error = new Error(errorMessage);
                 error.status = response.status;
                 error.data = data;
@@ -160,8 +169,9 @@ class ZuStoreAPI {
 
             if (response.ok) {
                 const data = await response.json();
-                this.accessToken = data.access;
-                localStorage.setItem('access_token', data.access);
+                const tokenPayload = data?.data || data;
+                this.accessToken = tokenPayload.access;
+                localStorage.setItem('access_token', tokenPayload.access);
                 console.log('Token refreshed successfully');
                 return true;
             }
@@ -181,7 +191,8 @@ class ZuStoreAPI {
             auth: false,
             body: JSON.stringify({ username, email, password, role })
         });
-        this.setTokens(data.access, data.refresh);
+        const payload = data?.data || data;
+        this.setTokens(payload.access, payload.refresh);
         return data;
     }
 
@@ -191,7 +202,8 @@ class ZuStoreAPI {
             auth: false,
             body: JSON.stringify({ username, password })
         });
-        this.setTokens(data.access, data.refresh);
+        const payload = data?.data || data;
+        this.setTokens(payload.access, payload.refresh);
         return data;
     }
 
@@ -315,7 +327,8 @@ class ZuStoreAPI {
 
     // User Profile
     async getProfile() {
-        return this.request('/auth/profile/');
+        const data = await this.request('/auth/profile/');
+        return data?.data || data;
     }
     
     async updateProfilePicture(imageFile) {
@@ -357,10 +370,6 @@ class ZuStoreAPI {
         });
     }
 
-    async getSellerOrders() {
-        return this.request('/sellers/orders/');
-    }
-
     // Delivery Partners / Couriers
     async getDeliveryPartners(verified = true) {
         return this.request(`/logistics/delivery-partners/?verified=${verified}`);
@@ -398,41 +407,6 @@ class ZuStoreAPI {
 
     async getZones(cityId) {
         return this.request(`/logistics/locations/?type=ZONE&parent=${cityId}`);
-    }
-
-    // Seller Profile Management
-    async updateSellerProfile(formData) {
-        // Use multipart form-data for file uploads
-        return this.request('/sellers/update_profile/', {
-            method: 'PATCH',
-            body: formData,
-            headers: {
-                'Authorization': `Bearer ${this.accessToken}`,
-                // Don't set Content-Type - browser will set it with boundary for FormData
-            }
-        });
-    }
-
-    // User Profile Picture Management
-    async updateProfilePicture(formData) {
-        return this.request('/auth/profile/picture/', {
-            method: 'PATCH',
-            body: formData,
-            headers: {
-                'Authorization': `Bearer ${this.accessToken}`,
-            }
-        });
-    }
-
-    // Product Image Management
-    async uploadProductImage(productId, formData) {
-        return this.request(`/products/${productId}/upload_image/`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'Authorization': `Bearer ${this.accessToken}`,
-            }
-        });
     }
 
     async deleteProductImage(productId, imageId) {
