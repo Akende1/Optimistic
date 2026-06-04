@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('auth', '0013_remove_user_is_superuser_user_is_admin'),
+        ('auth', '0012_alter_user_first_name_max_length'),
     ]
 
     operations = [
