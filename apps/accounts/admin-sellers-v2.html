@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Seller Verifications — Admin Portal</title>
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/layout.css">
+</head>
+<body>
+    <nav class="navbar"><div class="container nav-container"></div></nav>
+
+    <div class="container py-8">
+        <header class="flex justify-between items-center mb-8">
+            <h1 class="text-purple-800">🛡️ Optimistic Trust Center</h1>
+            <div class="badge badge-purple" id="pending-count">0 New Applications</div>
+        </header>
+
+        <div class="card border-purple-200 overflow-hidden">
+            <table class="table w-full">
+                <thead>
+                    <tr>
+                        <th>Shop Name</th>
+                        <th>Owner</th>
+                        <th>Province</th>
+                        <th>ID Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="verification-table-body">
+                    <!-- Populated by JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/roleGuard.js"></script>
+    <script src="/static/js/navigation.js"></script>
+</body>
+</html>

@@ -60,96 +60,6 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
-    
-    def approve(self):
-        """
-        Admin action: Approve product and make it visible to buyers.
-        
-        Transition: PENDING_APPROVAL → ACTIVE
-        
-        Business Rule: Only admins can approve.
-        Trigger: Notification sent to seller.
-        """
-        if self.status != 'PENDING_APPROVAL':
-            raise ValidationError(f'Can only approve PENDING_APPROVAL products. Current status: {self.status}')
-        
-        self.status = 'ACTIVE'
-        self.save()
-    
-    def suspend(self, reason=''):
-        """
-        Admin action: Suspend product for policy violations.
-        
-        Transition: ACTIVE → SUSPENDED
-        
-        Business Rule: Only admins can suspend.
-        Trigger: Notification sent to seller with reason.
-        """
-        if self.status != 'ACTIVE':
-            raise ValidationError(f'Can only suspend ACTIVE products. Current status: {self.status}')
-        
-        self.status = 'SUSPENDED'
-        self.save()
-    
-    def archive(self):
-        """
-        Admin/Seller action: Archive product permanently.
-        
-        Transition: ANY → ARCHIVED
-        
-        Business Rule: Cannot delete products with orders; archive instead.
-        Effect: Not visible in searches, historical reference only.
-        """
-        self.status = 'ARCHIVED'
-        self.save()
-    
-    def can_edit(self):
-        """
-        Check if product can be edited by seller.
-        
-        Rules:
-        - DRAFT: Fully editable
-        - PENDING_APPROVAL: Cannot edit (revert to DRAFT first)
-        - ACTIVE: Limited edits (price, stock) - full edit requires admin re-approval
-        - SUSPENDED: Cannot edit (appeal required)
-        - ARCHIVED: Cannot edit (historical record)
-        """
-        return self.status in ['DRAFT', 'ACTIVE']
-    
-    def can_delete(self):
-        """
-        Check if product can be deleted.
-        
-        Rule: Cannot delete products referenced in orders.
-        Alternative: Archive instead.
-        """
-        # Check if product has any orders (via OrderItem when implemented)
-        # For now, allow deletion of DRAFT only
-        return self.status == 'DRAFT'
-    
-    def soft_delete(self):
-        """
-        Soft delete product (mark as deleted without removing from database).
-        
-        Use Case: Remove product while preserving order history
-        Rule: Cannot soft delete products with active orders
-        """
-        # Check for active orders
-        from apps.orders.models import OrderItem
-        active_orders = OrderItem.objects.filter(
-            product=self,
-            order__status__in=['PENDING', 'PAID', 'READY_FOR_DELIVERY', 'IN_TRANSIT']
-        ).exists()
-        if active_orders:
-            raise ValidationError('Cannot delete product with active orders. Archive instead.')
-        
-        self.deleted_at = timezone.now()
-        self.save()
-    
-    def restore(self):
-        """Restore soft-deleted product."""
-        self.deleted_at = None
-        self.save()
 
 
 class Product(models.Model):
@@ -205,6 +115,11 @@ class Product(models.Model):
     # Product information fields
     name = models.CharField(max_length=150, help_text="Product title visible to buyers", db_index=True)
     description = models.TextField(help_text="Detailed product description")
+    attributes = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='Category-specific attributes (e.g., RAM, storage, size, material).'
+    )
     
     # Pricing: max_digits=10, decimal_places=2 means max 99,999,999.99 ZMW
     # Enough for anything from K5 (cheap item) to K50,000,000 (real estate)
@@ -248,6 +163,55 @@ class Product(models.Model):
         verbose_name = 'Product'
         verbose_name_plural = 'Products'
         ordering = ['-created_at']
+
+    def submit_for_approval(self):
+        """Seller action: submit draft product for admin review."""
+        if self.status != 'DRAFT':
+            raise ValidationError(f'Can only submit DRAFT products. Current status: {self.status}')
+        self.status = 'PENDING_APPROVAL'
+        self.save(update_fields=['status', 'updated_at'])
+
+    def approve(self):
+        """Admin action: approve product and make it public."""
+        if self.status != 'PENDING_APPROVAL':
+            raise ValidationError(f'Can only approve PENDING_APPROVAL products. Current status: {self.status}')
+        self.status = 'ACTIVE'
+        self.save(update_fields=['status', 'updated_at'])
+
+    def suspend(self, reason=''):
+        """Admin action: suspend active product."""
+        if self.status != 'ACTIVE':
+            raise ValidationError(f'Can only suspend ACTIVE products. Current status: {self.status}')
+        self.status = 'SUSPENDED'
+        self.save(update_fields=['status', 'updated_at'])
+
+    def archive(self):
+        """Admin/seller action: archive product."""
+        self.status = 'ARCHIVED'
+        self.save(update_fields=['status', 'updated_at'])
+
+    def can_edit(self):
+        return self.status in ['DRAFT', 'ACTIVE']
+
+    def can_delete(self):
+        return self.status == 'DRAFT'
+
+    def soft_delete(self):
+        # Keep order history intact while hiding product from default manager.
+        from apps.orders.models import OrderItem
+        active_orders = OrderItem.objects.filter(
+            product=self,
+            order__status__in=['PENDING', 'PAID', 'READY_FOR_DELIVERY', 'IN_TRANSIT']
+        ).exists()
+        if active_orders:
+            raise ValidationError('Cannot delete product with active orders. Archive instead.')
+
+        self.deleted_at = timezone.now()
+        self.save(update_fields=['deleted_at', 'updated_at'])
+
+    def restore(self):
+        self.deleted_at = None
+        self.save(update_fields=['deleted_at', 'updated_at'])
 
     def clean(self):
         """

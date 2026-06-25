@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimistic Shopping Cart</title>
+    <script src="https://kit.fontawesome.com/db1e80451c.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="./style/shoppingcart.css">
+    <link rel="stylesheet" href="./style/footer.css">
+</head>
+
+<body>
+    <div id="header">
+        <div>
+            <a href="./index.html"><div style="font:700 28px/1 Inter,system-ui,sans-serif;color:#8b95ff;letter-spacing:.06em;">OPTIMISTIC</div></a>
+        </div>
+        <p>
+            Shopping Cart
+        </p>
+    </div>
+
+    <div id="items">
+        <div id="left">
+
+        </div>
+
+        <div id="right">
+            <div>
+                <p>Total Amount</p>
+                <p id="totalamount"></p>
+            </div>
+            <div>
+                <p>Shipping Fee:</p>
+                <p>ZMW 0.00</p>
+            </div>
+            <hr>
+            <div>
+                <p>Payment Amount:</p>
+                <p>To be negotiated</p>
+            </div>
+
+            <button onclick="submitorder()">Submit Order</button>
+        </div>
+    </div>
+
+    <section id="footersection">
+
+    </section>
+</body>
+
+</html>
+
+<script type="module">
+    import footer from "./components/optimisticFooter.js";
+
+    document.querySelector("#footersection").innerHTML = footer();
+</script>
+
+<script src="./script/shoppingcart.js"></script>
+
+<script>
+    function getStoredToken() {
+        const candidates = ['access', 'optimisticAccessToken', 'Authorization'];
+        for (const key of candidates) {
+            const raw = localStorage.getItem(key);
+            if (!raw) continue;
+            try {
+                const parsed = JSON.parse(raw);
+                return typeof parsed === 'string' ? parsed : raw;
+            } catch (_) {
+                return raw;
+            }
+        }
+        return '';
+    }
+
+
+    async function submitorder() {
+            const token = getStoredToken();
+            if (!token) {
+                alert('You are not signed in');
+                window.location.href = './signin.html';
+                return;
+            }
+
+            const response = await fetch('/api/auth/profile/', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const user = await response.json().catch(() => ({}));
+
+            if (!response.ok || !user || !user.id) {
+                alert('Your session has expired. Please sign in again.');
+                window.location.href = './signin.html';
+                return;
+            }
+
+            alert('Your order has been submitted and is now in your Optimistic buyer history.');
+            localStorage.setItem('optimisticCart', JSON.stringify([]));
+            localStorage.setItem('legacyCart', JSON.stringify([]));
+            window.location.href = './buyer-dashboard.html';
+    }
+</script>

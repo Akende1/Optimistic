@@ -7,9 +7,10 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
-from .serializers import UserProfileSerializer
+from django.db.models import Sum
+from .models import User
 
-User = get_user_model()
+get_user_model()
 
 
 class IsSuperUser(IsAdminUser):
@@ -158,6 +159,9 @@ def get_user_detail(request, user_id):
             'email': user.email,
             'first_name': user.first_name,
             'last_name': user.last_name,
+            'phone_number': user.phone_number,
+            'phone_verified': user.phone_verified,
+            'email_verified': getattr(user, 'email_verified', False),
             'role': user.role,
             'status': user.status,
             'is_active': user.is_active,
@@ -168,49 +172,107 @@ def get_user_detail(request, user_id):
             'suspended_at': user.suspended_at.isoformat() if user.suspended_at else None,
             'suspension_reason': user.suspension_reason,
         }
+
+        # Trust review context: account verification and risk flags
+        from .models import AccountVerificationCode
+        latest_phone_code = AccountVerificationCode.objects.filter(user=user, channel='PHONE').order_by('-created_at').first()
+        latest_email_code = AccountVerificationCode.objects.filter(user=user, channel='EMAIL').order_by('-created_at').first()
+        total_codes_issued = AccountVerificationCode.objects.filter(user=user).count()
+        total_failed_attempts = AccountVerificationCode.objects.filter(user=user).aggregate(total=Sum('attempts'))['total'] or 0
+
+        user_data['trust_review'] = {
+            'is_account_verified': user.is_account_verified() if hasattr(user, 'is_account_verified') else False,
+            'phone_verified': user.phone_verified,
+            'email_verified': getattr(user, 'email_verified', False),
+            'total_codes_issued': total_codes_issued,
+            'total_failed_code_attempts': int(total_failed_attempts),
+            'latest_phone_verification_request_at': latest_phone_code.created_at.isoformat() if latest_phone_code else None,
+            'latest_email_verification_request_at': latest_email_code.created_at.isoformat() if latest_email_code else None,
+            'risk_flags': {
+                'account_unverified': not (user.is_account_verified() if hasattr(user, 'is_account_verified') else False),
+                'high_failed_code_attempts': int(total_failed_attempts) >= 10,
+                'is_suspended': bool(user.suspended_at),
+            },
+        }
         
         # Add role-specific data
         if user.role == 'SELLER':
             from apps.sellers.models import Seller
             from apps.orders.models import OrderItem
+            from apps.products.models import Product
             
             try:
                 seller = Seller.objects.get(user=user)
                 order_items = OrderItem.objects.filter(seller=seller)
+                total_revenue = order_items.aggregate(total=Sum('price_snapshot'))['total'] or 0
                 
                 user_data['seller'] = {
                     'id': seller.pk,
                     'store_name': seller.store_name,
-                    'store_description': seller.store_description,
-                    'business_registration': seller.business_registration,
+                    'description': seller.description,
+                    'phone': seller.phone,
+                    'business_name': seller.business_name,
+                    'business_registration_number': seller.business_registration_number,
+                    'tax_pin': seller.tax_pin,
+                    'verified': seller.verified,
                     'verification_status': seller.verification_status,
-                    'total_products': seller.products.count(),
+                    'physical_address': seller.physical_address,
+                    'town_city': seller.town_city,
+                    'province': seller.province,
+                    'primary_location': seller.primary_location.get_full_address() if seller.primary_location else '',
+                    'profile_completion': seller.get_completion_percentage(),
+                    'total_products': Product.objects.filter(seller=seller).count(),
+                    'active_products': Product.objects.filter(seller=seller, status='ACTIVE').count(),
+                    'pending_products': Product.objects.filter(seller=seller, status='PENDING_APPROVAL').count(),
                     'total_sales': order_items.count(),
+                    'total_revenue': float(total_revenue),
+                }
+
+                verification = getattr(seller, 'kyc_documents', None)
+                user_data['trust_review']['seller_kyc'] = {
+                    'status': verification.status if verification else None,
+                    'submitted_at': verification.submitted_at.isoformat() if verification and verification.submitted_at else None,
+                    'reviewed_at': verification.reviewed_at.isoformat() if verification and verification.reviewed_at else None,
+                    'reviewed_by': verification.reviewed_by.username if verification and verification.reviewed_by else None,
+                    'rejection_reason': verification.rejection_reason if verification else None,
+                    'has_id_front': bool(verification and verification.government_id_front),
+                    'has_id_back': bool(verification and verification.government_id_back),
+                    'has_selfie_with_id': bool(verification and verification.selfie_with_id),
                 }
             except Seller.DoesNotExist:
                 user_data['seller'] = None
         
         elif user.role == 'BUYER':
             from apps.orders.models import Order
+            from .models import BuyerAddress
             
             orders = Order.objects.filter(buyer=user)
             user_data['buyer'] = {
                 'total_orders': orders.count(),
                 'completed_orders': orders.filter(status='DELIVERED').count(),
-                'total_spent': sum(order.total_amount for order in orders),
+                'pending_orders': orders.filter(status='PENDING').count(),
+                'active_orders': orders.filter(status__in=['PAID', 'READY_FOR_DELIVERY', 'IN_TRANSIT']).count(),
+                'address_count': BuyerAddress.objects.filter(user=user).count(),
+                'total_spent': float(sum(order.total_amount for order in orders)),
             }
         
         elif user.role == 'COURIER':
-            from apps.logistics.models import DeliveryPartner
+            from apps.logistics.models import Delivery, DeliveryPartner
             
             try:
                 courier = DeliveryPartner.objects.get(user=user)
                 user_data['courier'] = {
                     'id': courier.pk,
+                    'name': courier.name,
+                    'phone': courier.phone,
+                    'email': courier.email,
+                    'partner_type': courier.partner_type,
+                    'service_area': courier.service_area,
                     'vehicle_type': courier.vehicle_type,
-                    'license_number': courier.license_number,
-                    'verification_status': courier.verification_status,
-                    'total_deliveries': courier.assigned_orders.count(),
+                    'id_number': courier.id_number,
+                    'verified': courier.verified,
+                    'is_active': courier.is_active,
+                    'total_deliveries': Delivery.objects.filter(partner=courier).count(),
                 }
             except DeliveryPartner.DoesNotExist:
                 user_data['courier'] = None

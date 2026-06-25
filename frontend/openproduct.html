@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimistic | Product Redirect</title>
+    <link rel="stylesheet" href="./style/storefront-2026.css">
+</head>
+<body>
+    <div class="sf-shell">
+        <section class="sf-card sf-hero-main" style="margin-top:18px; text-align:center;">
+            <span class="sf-kicker">Legacy redirect</span>
+            <h1>Opening product details...</h1>
+            <p class="sf-muted" id="route-copy">Switching to the modern product detail page.</p>
+            <div class="sf-actions" style="justify-content:center;">
+                <a class="sf-btn primary" id="route-link" href="./products.html">Open catalog</a>
+            </div>
+        </section>
+    </div>
+    <script>
+        let target = './products.html';
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get('id');
+
+        if (id) {
+            target = `./product-detail.html?id=${encodeURIComponent(id)}`;
+        } else {
+            try {
+                const opened = JSON.parse(localStorage.getItem('openedProduct') || '{}');
+                if (opened && opened.id) {
+                    target = `./product-detail.html?id=${encodeURIComponent(opened.id)}`;
+                }
+            } catch (_) {
+                // ignore malformed storage
+            }
+        }
+
+        document.getElementById('route-link').setAttribute('href', target);
+        window.location.replace(target);
+    </script>
+</body>
+</html>

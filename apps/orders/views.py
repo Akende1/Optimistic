@@ -7,6 +7,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.core.exceptions import ValidationError
 from .models import Order
 from .serializers import OrderSerializer, OrderCreateSerializer
+from apps.common.api import get_user_seller
 from apps.common.permissions import IsBuyer
 
 
@@ -38,10 +39,10 @@ class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
-    filterset_fields = ['status', 'buyer', 'created_at']
+    filterset_fields = ['status', 'order_type', 'buyer', 'created_at']
     ordering_fields = ['created_at', 'total_amount', 'status']
     ordering = ['-created_at']  # Default: newest first
-    search_fields = ['id', 'buyer__username']
+    search_fields = ['id', 'buyer__username', 'po_number', 'company_name']
     
     def get_queryset(self):
         """
@@ -68,9 +69,12 @@ class OrderViewSet(viewsets.ModelViewSet):
             return Order.objects.filter(buyer=user)
         
         # Sellers see ONLY orders containing THEIR products
-        if user.role == 'SELLER' and hasattr(user, 'seller'):
+        if user.role == 'SELLER':
+            seller = get_user_seller(user)
+            if seller is None:
+                return Order.objects.none()
             return Order.objects.filter(
-                items__seller=user.seller
+                items__seller=seller
             ).distinct()  # Distinct to avoid duplicates from multiple items
         
         # Default: no orders (shouldn't reach here)
@@ -89,7 +93,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         CRITICAL: Sellers CANNOT place orders - buyers only!
         """
         # Extra validation: ensure user is not a seller
-        if hasattr(self.request.user, 'seller'):
+        if get_user_seller(self.request.user) is not None:
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied('Sellers cannot place orders. Please use a buyer account.')
         
@@ -140,13 +144,14 @@ class OrderViewSet(viewsets.ModelViewSet):
         order = self.get_object()
         
         # Verify user is a seller
-        if not hasattr(request.user, 'seller'):
+        seller = get_user_seller(request.user)
+        if seller is None:
             return Response({
                 'error': 'Only sellers can mark orders as ready'
             }, status=status.HTTP_403_FORBIDDEN)
         
         # Verify this order contains seller's products
-        if not order.items.filter(seller=request.user.seller).exists():
+        if not order.items.filter(seller=seller).exists():
             return Response({
                 'error': 'This order does not contain your products'
             }, status=status.HTTP_403_FORBIDDEN)

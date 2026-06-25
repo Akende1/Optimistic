@@ -1,515 +1,884 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seller Dashboard — Optimistic</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Optimistic Seller Dashboard</title>
+    <link rel="stylesheet" href="./style/dashboard.css">
     <style>
+        :root {
+            --bg: #07111f;
+            --panel: rgba(14, 20, 35, 0.88);
+            --panel-strong: #0f1729;
+            --card: rgba(18, 25, 42, 0.94);
+            --card-2: rgba(22, 32, 53, 0.95);
+            --border: rgba(255, 255, 255, 0.09);
+            --text: #f3f7ff;
+            --muted: #94a3b8;
+            --accent: #7f8cff;
+            --accent-2: #8d7bff;
+            --accent-3: #58a6ff;
+            --shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+        }
+
         * {
-            margin: 0;
-            padding: 0;
             box-sizing: border-box;
         }
 
-        :root {
-            --primary: #6a11cb;
-            --secondary: #2575fc;
-            --light: #f8f7ff;
-            --dark: #1a1a2e;
-            --success: #28a745;
-            --warning: #ff9500;
-            --danger: #ff4757;
+        html,
+        body {
+            margin: 0;
+            min-height: 100%;
         }
 
         body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #fff;
-            color: var(--dark);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(127, 140, 255, 0.24), transparent 30%),
+                radial-gradient(circle at top right, rgba(88, 166, 255, 0.16), transparent 28%),
+                linear-gradient(180deg, #08101d 0%, #050b14 100%);
+            color: var(--text);
+            padding-top: 60px;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .page {
+            display: grid;
+            grid-template-columns: 290px minmax(0, 1fr);
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            background: rgba(8, 15, 28, 0.88);
+            border-right: 1px solid var(--border);
+            padding: 28px 22px;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow: auto;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .brand-mark {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg, var(--accent), #5ea7ff);
+            color: white;
+            font-weight: 800;
+            box-shadow: 0 14px 30px rgba(127, 140, 255, 0.32);
+        }
+
+        .brand h1 {
+            font-size: 1.08rem;
+            line-height: 1.1;
+            margin: 0;
+        }
+
+        .brand p,
+        .panel-note,
+        .meta,
+        .subtle {
+            color: var(--muted);
+            margin: 0;
+        }
+
+        .nav-group {
+            display: grid;
+            gap: 10px;
+            margin: 22px 0 30px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            background: transparent;
+            border: 1px solid transparent;
+            color: #d9e5ff;
+            transition: 180ms ease;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(127, 140, 255, 0.12);
+            border-color: rgba(127, 140, 255, 0.22);
+            transform: translateX(2px);
+        }
+
+        .sidebar-card {
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(19, 29, 49, 0.9), rgba(10, 18, 31, 0.92));
+            border-radius: 24px;
+            padding: 18px;
+            margin-top: 18px;
+        }
+
+        .sidebar-card strong {
+            display: block;
+            font-size: 1.02rem;
+            margin-bottom: 8px;
+        }
+
+        .sidebar-actions {
+            display: grid;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: none;
+            border-radius: 14px;
+            padding: 12px 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 180ms ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #5ea7ff);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .content {
+            padding: 28px;
+            display: grid;
+            gap: 22px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 18px 22px;
+            border: 1px solid var(--border);
+            border-radius: 26px;
+            background: rgba(12, 20, 36, 0.72);
+            backdrop-filter: blur(16px);
+            box-shadow: var(--shadow);
+        }
+
+        .topbar-left,
+        .topbar-right,
+        .hero-actions,
+        .metric-row,
+        .split-grid,
+        .list-grid {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-size: 0.88rem;
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+            gap: 18px;
+        }
+
+        .hero-card,
+        .panel,
+        .mini-card {
+            border-radius: 28px;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(19, 29, 49, 0.95), rgba(10, 18, 31, 0.94));
+            box-shadow: var(--shadow);
+        }
+
+        .hero-card {
+            position: relative;
+            overflow: hidden;
+            padding: 28px;
+            min-height: 280px;
+        }
+
+        .hero-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at top right, rgba(86, 214, 190, 0.24), transparent 28%),
+                radial-gradient(circle at bottom left, rgba(247, 108, 94, 0.18), transparent 26%);
+            pointer-events: none;
+        }
+
+        .hero-card > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border);
+            color: #f5f8ff;
+            font-size: 0.86rem;
+        }
+
+        .hero h2 {
+            margin: 16px 0 10px;
+            font-size: clamp(2rem, 4vw, 3.8rem);
+            line-height: 0.98;
+            max-width: 10ch;
+        }
+
+        .hero p {
+            color: #c1cde1;
+            max-width: 62ch;
+            margin: 0;
             line-height: 1.6;
         }
 
-        /* Header */
-        header {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            padding: 20px 0;
-            box-shadow: 0 2px 15px rgba(106, 17, 203, 0.2);
-        }
-
-        .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: 700;
-            color: white;
-        }
-
-        .logo i {
-            margin-right: 10px;
-        }
-
-        /* Navigation */
-        nav {
-            background: white;
-            border-bottom: 1px solid #e0e0e0;
-            padding: 0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        }
-
-        .nav-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 0;
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        .nav-links a {
-            text-decoration: none;
-            color: #555;
-            font-weight: 500;
-            font-size: 14px;
-            padding: 18px 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-            border-bottom: 3px solid transparent;
-        }
-
-        .nav-links a:hover {
-            color: var(--primary);
-            background: rgba(106, 17, 203, 0.05);
-        }
-
-        .nav-links a.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-            background: rgba(106, 17, 203, 0.05);
-        }
-
-        .nav-links a.logout {
-            color: var(--danger);
-        }
-
-        .nav-links a.logout:hover {
-            background: rgba(255, 71, 87, 0.1);
-        }
-
-        /* Dashboard Container */
-        .dashboard-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 30px 20px;
-        }
-
-        .page-header {
-            margin-bottom: 30px;
-        }
-
-        .page-header h1 {
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 5px;
-        }
-
-        .page-header p {
-            color: #666;
-            font-size: 16px;
-        }
-
-        /* Metrics Grid */
-        .metrics-grid {
+        .hero-side {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            gap: 18px;
+        }
+
+        .side-block {
+            padding: 22px;
+        }
+
+        .side-block h3,
+        .panel h3,
+        .mini-card h4 {
+            margin: 0 0 10px;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 14px;
         }
 
         .metric-card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 5px 15px rgba(106, 17, 203, 0.08);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 1px solid #f0f0f0;
-            position: relative;
-            overflow: hidden;
+            padding: 18px;
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(20, 31, 52, 0.96), rgba(9, 16, 28, 0.95));
+            min-height: 136px;
         }
 
-        .metric-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background: linear-gradient(to bottom, var(--primary), var(--secondary));
-            opacity: 0;
-            transition: opacity 0.3s ease;
+        .metric-card strong {
+            display: block;
+            font-size: 1.9rem;
+            margin: 12px 0 8px;
         }
 
-        .metric-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(106, 17, 203, 0.15);
+        .metric-card span {
+            color: var(--muted);
         }
 
-        .metric-card:hover::before {
-            opacity: 1;
+        .metric-card .tag {
+            width: fit-content;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            background: rgba(255, 255, 255, 0.08);
+            color: #d8e5ff;
         }
 
-        .metric-card.success::before {
-            background: linear-gradient(to bottom, #28a745, #20c997);
+        .panels {
+            display: grid;
+            grid-template-columns: 1.05fr 0.95fr;
+            gap: 18px;
         }
 
-        .metric-card.warning::before {
-            background: linear-gradient(to bottom, #ff9500, #ffc107);
+        .panel {
+            padding: 22px;
         }
 
-        .metric-card.danger::before {
-            background: linear-gradient(to bottom, #ff4757, #ff6b81);
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
         }
 
-        .metric-label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
+        .list {
+            display: grid;
+            gap: 12px;
         }
 
-        .metric-value {
-            font-size: 36px;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 5px;
+        .list-item {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            align-items: center;
+            padding: 16px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
         }
 
-        .metric-card.success .metric-value {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .list-item h4 {
+            margin: 0 0 6px;
+            font-size: 1rem;
         }
 
-        .metric-card.warning .metric-value {
-            background: linear-gradient(135deg, #ff9500, #ffc107);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .list-item small,
+        .list-item p {
+            color: var(--muted);
+            margin: 0;
         }
 
-        .metric-card.danger .metric-value {
-            background: linear-gradient(135deg, #ff4757, #ff6b81);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 10px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 700;
         }
 
-        .metric-subtitle {
-            font-size: 14px;
-            color: #666;
+        .status.ok {
+            background: rgba(86, 214, 190, 0.14);
+            color: #baf6e9;
         }
 
-        .metric-icon {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 40px;
-            opacity: 0.1;
+        .status.warn {
+            background: rgba(244, 201, 93, 0.14);
+            color: #ffe19c;
         }
 
-        /* Loading & Error States */
-        .loading, .error-state {
-            text-align: center;
-            padding: 60px 20px;
+        .status.bad {
+            background: rgba(247, 108, 94, 0.16);
+            color: #ffb1a8;
         }
 
-        .loading {
-            color: var(--primary);
-            font-size: 18px;
+        .empty-state {
+            padding: 22px;
+            border-radius: 22px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px dashed rgba(255, 255, 255, 0.14);
+            color: var(--muted);
         }
 
-        .loading i {
-            font-size: 48px;
-            margin-bottom: 20px;
-            animation: spin 1s linear infinite;
+        .error-banner {
+            display: none;
+            padding: 14px 16px;
+            border-radius: 18px;
+            background: rgba(247, 108, 94, 0.14);
+            border: 1px solid rgba(247, 108, 94, 0.24);
+            color: #ffd0cb;
         }
 
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        .chart {
+            width: 100%;
+            min-height: 220px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.03);
+            padding: 10px;
         }
 
-        .error-state {
-            color: var(--danger);
-        }
-
-        .error-state i {
-            font-size: 48px;
-            margin-bottom: 20px;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .nav-links {
-                flex-wrap: wrap;
+        @media (max-width: 1180px) {
+            .page,
+            .hero,
+            .panels,
+            .metric-grid {
+                grid-template-columns: 1fr;
             }
 
-            .nav-links a {
-                font-size: 12px;
-                padding: 12px 10px;
+            .sidebar {
+                position: relative;
+                height: auto;
+            }
+        }
+
+        @media (max-width: 860px) {
+            .page {
+                grid-template-columns: 1fr;
             }
 
-            .page-header h1 {
-                font-size: 24px;
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
             }
 
-            .metric-value {
-                font-size: 28px;
+            .content {
+                padding: 18px;
+            }
+
+            .topbar {
+                align-items: flex-start;
+                flex-direction: column;
             }
         }
     </style>
 </head>
+
 <body>
-    <!-- Header -->
-    <header>
-        <div class="header-content">
-            <div class="logo">
-                <i class="fas fa-store"></i>
-                Seller Center
-            </div>
-            <div style="color: white; font-size: 14px;" id="storeNameDisplay"></div>
+    <div class="dashboard-topbar" style="position: fixed; top: 0; left: 0; right: 0; z-index: 100;">
+        <div class="dashboard-topbar-brand">OPTIMISTIC</div>
+        <div class="dashboard-topbar-nav">
+            <a href="./index.html">Marketplace</a>
+            <a href="./seller-dashboard-v2.html" class="active">Dashboard</a>
+            <a href="./seller-products-v2.html">Products</a>
+            <a href="./seller-orders-v2.html">Orders</a>
+            <a href="./seller-earnings-v2.html">Earnings</a>
         </div>
-    </header>
-
-    <!-- Navigation -->
-    <nav>
-        <div class="nav-content">
-            <ul class="nav-links">
-                <li><a href="seller-dashboard-v2.html" class="active"><i class="fas fa-chart-line"></i> Dashboard</a></li>
-                <li><a href="seller-products-v2.html"><i class="fas fa-box"></i> Products</a></li>
-                <li><a href="add-product.html"><i class="fas fa-plus-circle"></i> Add Product</a></li>
-                <li><a href="seller-orders-v2.html"><i class="fas fa-shopping-cart"></i> Orders</a></li>
-                <li><a href="seller-store-v2.html"><i class="fas fa-store-alt"></i> Store</a></li>
-                <li><a href="seller-earnings-v2.html"><i class="fas fa-dollar-sign"></i> Earnings</a></li>
-                <li><a href="seller-disputes-v2.html"><i class="fas fa-balance-scale"></i> Disputes</a></li>
-                <li><a href="seller-profile-v2.html"><i class="fas fa-user-circle"></i> Profile</a></li>
-                <li><a href="#" onclick="api.logout()" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-            </ul>
-        </div>
-    </nav>
-
-    <!-- Dashboard Container -->
-    <div class="dashboard-container">
-        <div class="page-header">
-            <h1>Dashboard Overview</h1>
-            <p>Monitor your business performance and take action on key metrics</p>
-        </div>
-
-        <!-- Loading State -->
-        <div id="loading" class="loading">
-            <i class="fas fa-spinner"></i>
-            <p>Loading your dashboard...</p>
-        </div>
-
-        <!-- Error State -->
-        <div id="error" class="error-state" style="display: none;">
-            <i class="fas fa-exclamation-circle"></i>
-            <p id="error-message"></p>
-        </div>
-
-        <!-- Metrics Grid -->
-        <div id="metrics" style="display: none;">
-            <div class="metrics-grid">
-                <!-- TODAY'S SALES -->
-                <div class="metric-card success" onclick="location.href='seller-earnings-v2.html'">
-                    <i class="fas fa-dollar-sign metric-icon"></i>
-                    <div class="metric-label">Today's Sales</div>
-                    <div class="metric-value" id="today-sales">K0.00</div>
-                    <div class="metric-subtitle">Gross revenue today</div>
-                </div>
-
-                <!-- TOTAL PRODUCTS -->
-                <div class="metric-card" onclick="location.href='seller-products-v2.html'">
-                    <i class="fas fa-box metric-icon"></i>
-                    <div class="metric-label">Total Products</div>
-                    <div class="metric-value" id="total-products">0</div>
-                    <div class="metric-subtitle">Active listings</div>
-                </div>
-
-                <!-- PENDING ORDERS -->
-                <div class="metric-card warning" onclick="location.href='seller-orders-v2.html'">
-                    <i class="fas fa-clock metric-icon"></i>
-                    <div class="metric-label">Pending Orders</div>
-                    <div class="metric-value" id="pending-orders">0</div>
-                    <div class="metric-subtitle">Need fulfillment</div>
-                </div>
-
-                <!-- IN TRANSIT -->
-                <div class="metric-card" onclick="location.href='seller-orders-v2.html'">
-                    <i class="fas fa-shipping-fast metric-icon"></i>
-                    <div class="metric-label">In Transit</div>
-                    <div class="metric-value" id="in-transit">0</div>
-                    <div class="metric-subtitle">Out for delivery</div>
-                </div>
-
-                <!-- DELIVERED -->
-                <div class="metric-card success" onclick="location.href='seller-orders-v2.html'">
-                    <i class="fas fa-check-circle metric-icon"></i>
-                    <div class="metric-label">Delivered</div>
-                    <div class="metric-value" id="delivered">0</div>
-                    <div class="metric-subtitle">Completed orders</div>
-                </div>
-
-                <!-- PENDING ESCROW -->
-                <div class="metric-card" onclick="location.href='seller-earnings-v2.html'">
-                    <i class="fas fa-hourglass-half metric-icon"></i>
-                    <div class="metric-label">Pending Escrow</div>
-                    <div class="metric-value" id="pending-escrow">K0.00</div>
-                    <div class="metric-subtitle">Awaiting delivery confirmation</div>
-                </div>
-
-                <!-- AVAILABLE ESCROW -->
-                <div class="metric-card success" onclick="location.href='seller-earnings-v2.html'">
-                    <i class="fas fa-wallet metric-icon"></i>
-                    <div class="metric-label">Available Balance</div>
-                    <div class="metric-value" id="available-escrow">K0.00</div>
-                    <div class="metric-subtitle">Ready for payout</div>
-                </div>
-
-                <!-- ACTIVE DISPUTES -->
-                <div class="metric-card danger" onclick="location.href='seller-disputes-v2.html'" id="disputes-card">
-                    <i class="fas fa-exclamation-triangle metric-icon"></i>
-                    <div class="metric-label">Active Disputes</div>
-                    <div class="metric-value" id="disputes">0</div>
-                    <div class="metric-subtitle">Require attention</div>
-                </div>
-
-                <!-- LOW STOCK ALERTS -->
-                <div class="metric-card danger" onclick="location.href='seller-products-v2.html'" id="stock-card">
-                    <i class="fas fa-box-open metric-icon"></i>
-                    <div class="metric-label">Low Stock</div>
-                    <div class="metric-value" id="low-stock">0</div>
-                    <div class="metric-subtitle">Products need restocking</div>
-                </div>
-            </div>
+        <div class="dashboard-topbar-actions">
+            <span class="dashboard-topbar-user" id="user-display">Loading...</span>
+            <a href="./seller-profile-v2.html" class="dashboard-topbar-button ghost">Store</a>
+            <button class="dashboard-topbar-button" onclick="signOut()">Sign out</button>
         </div>
     </div>
+    <div class="page">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-mark">O</div>
+                <div>
+                    <h1>Optimistic Seller</h1>
+                    <p>Store operations cockpit</p>
+                </div>
+            </div>
 
-    <script src="/static/js/api.js?v=20260116"></script>
+            <nav class="nav-group">
+                <a class="nav-item active" href="/seller-dashboard-v2.html"><span>Dashboard</span><span>01</span></a>
+                <a class="nav-item" href="/seller-products-v2.html"><span>Products</span><span>02</span></a>
+                <a class="nav-item" href="/seller-orders-v2.html"><span>Orders</span><span>03</span></a>
+                <a class="nav-item" href="/seller-store-v2.html"><span>Storefront</span><span>04</span></a>
+                <a class="nav-item" href="/seller-earnings-v2.html"><span>Earnings</span><span>05</span></a>
+                <a class="nav-item" href="/seller-profile-v2.html"><span>Profile</span><span>06</span></a>
+            </nav>
+
+            <div class="sidebar-card">
+                <strong>Optimistic Seller Portal</strong>
+                <p class="panel-note">Build your storefront, publish products, and manage orders from one control surface.</p>
+                <div class="sidebar-actions">
+                    <a class="btn btn-primary" href="/add-product.html">Add product</a>
+                    <button class="btn btn-secondary" type="button" onclick="clearSession()">Sign out</button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="content">
+            <div class="topbar">
+                <div class="topbar-left">
+                    <span class="pill">Seller role</span>
+                    <span class="pill" id="store-pill">Loading store...</span>
+                </div>
+                <div class="topbar-right">
+                    <span class="pill" id="notify-pill">0 unread</span>
+                    <span class="pill" id="verification-pill">Verification pending</span>
+                </div>
+            </div>
+
+            <div class="error-banner" id="error-banner"></div>
+
+            <section class="hero">
+                <div class="hero-card">
+                    <div class="hero-kicker">Optimistic storefront command center</div>
+                    <h2 id="hero-title">Run your shop with one clean view.</h2>
+                    <p id="hero-copy">Track product health, orders, revenue, and verification from the same dashboard. Designed for faster decisions and fewer clicks.</p>
+                    <div class="hero-actions" style="margin-top: 22px;">
+                        <a class="btn btn-primary" href="/seller-products-v2.html">Manage products</a>
+                        <a class="btn btn-secondary" href="/seller-store-v2.html">Edit storefront</a>
+                    </div>
+                </div>
+                <div class="hero-side">
+                    <div class="panel side-block">
+                        <h3>Store health</h3>
+                        <p class="subtle" id="health-copy">Pulling your latest metrics...</p>
+                        <div class="metric-row" style="margin-top: 18px;">
+                            <span class="pill" id="health-completion">0% complete</span>
+                            <span class="pill" id="health-status">Store active</span>
+                        </div>
+                    </div>
+                    <div class="panel side-block">
+                        <h3>Quick status</h3>
+                        <div class="list-grid">
+                            <div class="mini-card" style="padding: 18px; flex: 1;">
+                                <h4>Products</h4>
+                                <p class="subtle" id="products-status">0 live</p>
+                            </div>
+                            <div class="mini-card" style="padding: 18px; flex: 1;">
+                                <h4>Orders</h4>
+                                <p class="subtle" id="orders-status">0 total</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="metric-grid" id="metrics-grid">
+                <div class="metric-card"><div class="tag">Loading</div><strong>--</strong><span>Total products</span></div>
+                <div class="metric-card"><div class="tag">Loading</div><strong>--</strong><span>Active products</span></div>
+                <div class="metric-card"><div class="tag">Loading</div><strong>--</strong><span>Pending approvals</span></div>
+                <div class="metric-card"><div class="tag">Loading</div><strong>--</strong><span>Orders</span></div>
+                <div class="metric-card"><div class="tag">Loading</div><strong>--</strong><span>Revenue</span></div>
+            </section>
+
+            <section class="panels">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h3>Recent products</h3>
+                            <p class="panel-note">Your newest listings and their current status.</p>
+                        </div>
+                        <a class="pill" href="/seller-products-v2.html">View all</a>
+                    </div>
+                    <div class="list" id="products-list"></div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h3>Recent orders</h3>
+                            <p class="panel-note">Follow up on fresh customer activity.</p>
+                        </div>
+                        <a class="pill" href="/seller-orders-v2.html">Open orders</a>
+                    </div>
+                    <div class="list" id="orders-list"></div>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h3>Order trend (last 14 days)</h3>
+                        <p class="panel-note">Realtime order volume from your store activity.</p>
+                    </div>
+                </div>
+                <svg id="seller-trend" class="chart" viewBox="0 0 640 220" preserveAspectRatio="none"></svg>
+            </section>
+
+            <section class="panels">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h3>Verification and readiness</h3>
+                            <p class="panel-note">KYC status and profile completion at a glance.</p>
+                        </div>
+                    </div>
+                    <div class="list" id="verification-list">
+                        <div class="empty-state">Loading verification details...</div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h3>Notifications</h3>
+                            <p class="panel-note">Unread marketplace updates.</p>
+                        </div>
+                    </div>
+                    <div class="list" id="notifications-list">
+                        <div class="empty-state">Loading notifications...</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
     <script>
-        async function loadDashboard() {
-            const loading = document.getElementById('loading');
-            const error = document.getElementById('error');
-            const errorMessage = document.getElementById('error-message');
-            const metrics = document.getElementById('metrics');
+        const state = {
+            dashboard: null,
+            analytics: null,
+            verification: null,
+        };
 
+        function getStoredToken() {
+            const candidates = ['access', 'optimisticAccessToken', 'Authorization'];
+            for (const key of candidates) {
+                const raw = localStorage.getItem(key);
+                if (!raw) continue;
+                try {
+                    const parsed = JSON.parse(raw);
+                    return typeof parsed === 'string' ? parsed : raw;
+                } catch (_) {
+                    return raw;
+                }
+            }
+            return '';
+        }
+
+        function authHeaders() {
+            const token = getStoredToken();
+            return token ? { Authorization: `Bearer ${token}` } : {};
+        }
+
+        async function fetchJson(path) {
+            const response = await fetch(path, { headers: authHeaders() });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(payload.error || payload.detail || `Request failed (${response.status})`);
+            }
+            return payload;
+        }
+
+        function formatMoney(value) {
+            const amount = Number(value || 0);
             try {
-                // Check if API loaded
-                if (typeof ZuStoreAPI === 'undefined') {
-                    throw new Error('API script failed to load');
-                }
-                
-                const api = new ZuStoreAPI();
-                
-                // Check authentication
-                if (!api.isAuthenticated()) {
-                    location.href = 'login.html';
-                    return;
-                }
-
-                console.log('Loading seller dashboard...');
-
-                // Get seller info first
-                const sellerInfo = await api.getSellerProfile();
-                if (sellerInfo && sellerInfo.store_name) {
-                    document.getElementById('storeNameDisplay').textContent = `Welcome, ${sellerInfo.store_name}`;
-                }
-
-                // Fetch analytics and products in parallel
-                const [analytics, productsResponse] = await Promise.all([
-                    api.getSellerAnalytics(),
-                    api.request('/products/')
-                ]);
-
-                console.log('Analytics:', analytics);
-                console.log('Products:', productsResponse);
-
-                // Update metrics with actual data
-                document.getElementById('today-sales').textContent = `K${analytics.revenue.total.toFixed(2)}`;
-                document.getElementById('pending-orders').textContent = (analytics.orders.pending || 0) + (analytics.orders.paid || 0);
-                document.getElementById('in-transit').textContent = analytics.orders.in_transit || 0;
-                document.getElementById('delivered').textContent = analytics.orders.delivered || 0;
-                
-                // Products count
-                const productList = productsResponse.results || [];
-                const activeProducts = productList.filter(p => p.status === 'ACTIVE');
-                document.getElementById('total-products').textContent = activeProducts.length;
-                
-                // Escrow (placeholder - backend doesn't return this yet)
-                document.getElementById('pending-escrow').textContent = 'K0.00';
-                document.getElementById('available-escrow').textContent = 'K0.00';
-                
-                // Disputes (placeholder)
-                document.getElementById('disputes').textContent = '0';
-                
-                // Low stock - products with stock between 1-9
-                const lowStockCount = productList.filter(p => p.stock > 0 && p.stock < 10).length;
-                document.getElementById('low-stock').textContent = lowStockCount;
-
-                // Hide alert cards if zero
-                if (lowStockCount === 0) {
-                    document.getElementById('stock-card').style.display = 'none';
-                }
-
-                // Show metrics, hide loading
-                loading.style.display = 'none';
-                metrics.style.display = 'block';
-                
-                console.log('Dashboard loaded successfully!');
-
-            } catch (err) {
-                console.error('Dashboard load error:', err);
-                loading.style.display = 'none';
-                error.style.display = 'block';
-                errorMessage.textContent = 'Failed to load dashboard: ' + (err.message || 'Unknown error');
+                return new Intl.NumberFormat('en-ZM', { style: 'currency', currency: 'ZMW', maximumFractionDigits: 2 }).format(amount);
+            } catch (_) {
+                return `ZMW ${amount.toFixed(2)}`;
             }
         }
 
-        // Run when page loads
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', loadDashboard);
-        } else {
-            loadDashboard();
+        function formatDate(value) {
+            if (!value) return 'Just now';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return value;
+            return new Intl.DateTimeFormat('en-ZM', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
         }
+
+        function statusClass(status) {
+            if (!status) return 'warn';
+            if (['ACTIVE', 'VERIFIED', 'DELIVERED', 'PAID'].includes(status)) return 'ok';
+            if (['PENDING', 'DRAFT', 'PENDING_APPROVAL', 'UNDER_REVIEW'].includes(status)) return 'warn';
+            return 'bad';
+        }
+
+        function setError(message) {
+            const banner = document.getElementById('error-banner');
+            banner.style.display = 'block';
+            banner.textContent = message;
+        }
+
+        function drawTrend(orders) {
+            const svg = document.getElementById('seller-trend');
+            if (!svg) return;
+            const now = new Date();
+            const dayMap = new Map();
+            for (let i = 13; i >= 0; i -= 1) {
+                const d = new Date(now);
+                d.setDate(now.getDate() - i);
+                dayMap.set(d.toISOString().slice(0, 10), 0);
+            }
+
+            orders.forEach((order) => {
+                const key = String(order.created_at || '').slice(0, 10);
+                if (dayMap.has(key)) dayMap.set(key, dayMap.get(key) + 1);
+            });
+
+            const values = [...dayMap.values()];
+            const labels = [...dayMap.keys()].map((value) => value.slice(5));
+            const maxValue = Math.max(1, ...values);
+
+            const points = values.map((value, index) => {
+                const x = (index / (values.length - 1 || 1)) * 620 + 10;
+                const y = 200 - ((value / maxValue) * 170) + 10;
+                return `${x},${y}`;
+            }).join(' ');
+
+            const dots = values.map((value, index) => {
+                const x = (index / (values.length - 1 || 1)) * 620 + 10;
+                const y = 200 - ((value / maxValue) * 170) + 10;
+                return `<circle cx="${x}" cy="${y}" r="4" fill="#56d6be"></circle>`;
+            }).join('');
+
+            const xLabels = labels.map((label, index) => {
+                const x = (index / (labels.length - 1 || 1)) * 620 + 10;
+                return `<text x="${x}" y="214" fill="#94a3b8" font-size="10" text-anchor="middle">${label}</text>`;
+            }).join('');
+
+            svg.innerHTML = `
+                <line x1="10" y1="200" x2="630" y2="200" stroke="rgba(255,255,255,0.12)" />
+                <polyline points="${points}" fill="none" stroke="#56d6be" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></polyline>
+                ${dots}
+                ${xLabels}
+            `;
+        }
+
+        function clearSession() {
+            ['access', 'refresh', 'optimisticAccessToken', 'optimisticRefreshToken', 'optimisticUser', 'Authorization'].forEach((key) => localStorage.removeItem(key));
+            window.location.href = '/signin.html';
+        }
+
+        function signOut() {
+            localStorage.removeItem('Authorization');
+            window.location.href = './index.html';
+        }
+
+        async function loadUserProfile() {
+            try {
+                const user = await fetchJson('/api/auth/profile/');
+                if (user && user.id) {
+                    const displayName = user.full_name || user.first_name || user.email || 'Seller';
+                    document.getElementById('user-display').textContent = `${displayName} (Seller)`;
+                }
+            } catch (err) {
+                console.error('Failed to load user profile:', err);
+            }
+        }
+
+        function renderMetrics(data) {
+            const stats = data.stats || {};
+            const items = [
+                { label: 'Total products', value: stats.total_products ?? 0, tag: data.verified ? 'Active store' : 'Needs review' },
+                { label: 'Active products', value: stats.active_products ?? 0, tag: 'Live' },
+                { label: 'Pending approvals', value: stats.pending_products ?? 0, tag: 'Review' },
+                { label: 'Orders', value: stats.total_orders ?? 0, tag: 'All time' },
+                { label: 'Revenue', value: formatMoney(stats.total_revenue), tag: 'Net sales' },
+            ];
+
+            const grid = document.getElementById('metrics-grid');
+            grid.innerHTML = items.map((item) => `
+                <article class="metric-card">
+                    <div class="tag">${item.tag}</div>
+                    <strong>${item.value}</strong>
+                    <span>${item.label}</span>
+                </article>
+            `).join('');
+
+            document.getElementById('store-pill').textContent = data.store_name || 'Your store';
+            document.getElementById('notify-pill').textContent = `${data.unread_notifications || 0} unread`;
+            document.getElementById('verification-pill').textContent = data.verified ? 'Verified seller' : `Status: ${data.verification_status || 'Pending'}`;
+            document.getElementById('health-completion').textContent = `${data.completion_percentage || 0}% complete`;
+            document.getElementById('health-status').textContent = data.verified ? 'Store active' : 'Needs approval';
+            document.getElementById('products-status').textContent = `${stats.active_products || 0} live / ${stats.total_products || 0} total`;
+            document.getElementById('orders-status').textContent = `${stats.total_orders || 0} total orders`;
+            document.getElementById('hero-title').textContent = `${data.store_name || 'Your store'} at a glance.`;
+            document.getElementById('hero-copy').textContent = data.verified
+                ? 'You are live on Optimistic. Keep listings fresh, answer orders quickly, and monitor the store health panel for growth signals.'
+                : 'Finish verification to unlock publishing and keep product operations moving. Your dashboard will update as your store becomes active.';
+            document.getElementById('health-copy').textContent = data.verified
+                ? 'Everything is ready for steady operations.'
+                : 'Verification is the next step before full publishing is enabled.';
+
+            const verificationList = document.getElementById('verification-list');
+            verificationList.innerHTML = [
+                `<div class="list-item"><div><h4>Verification status</h4><p>${data.verification_status || 'PENDING'}</p></div><span class="status ${statusClass(data.verification_status || 'PENDING')}">${data.verification_status || 'Pending'}</span></div>`,
+                `<div class="list-item"><div><h4>Profile completion</h4><p>${data.completion_percentage || 0}% of the core store profile is complete.</p></div><span class="status ok">${data.completion_percentage || 0}%</span></div>`,
+                `<div class="list-item"><div><h4>Unread notifications</h4><p>${data.unread_notifications || 0} marketplace updates require attention.</p></div><span class="status warn">${data.unread_notifications || 0}</span></div>`,
+            ].join('');
+
+            const notifications = data.notifications || [];
+            const notificationsList = document.getElementById('notifications-list');
+            notificationsList.innerHTML = notifications.length
+                ? notifications.map((item) => `
+                    <div class="list-item">
+                        <div>
+                            <h4>${item.title}</h4>
+                            <p>${item.message}</p>
+                            <small>${formatDate(item.created_at)}</small>
+                        </div>
+                    </div>
+                `).join('')
+                : '<div class="empty-state">No unread notifications right now.</div>';
+
+            const products = data.recent_products || [];
+            const productsList = document.getElementById('products-list');
+            productsList.innerHTML = products.length
+                ? products.map((item) => `
+                    <div class="list-item">
+                        <div>
+                            <h4>${item.name}</h4>
+                            <p>${formatMoney(item.price)} · Stock ${item.stock}</p>
+                            <small>${formatDate(item.created_at)}</small>
+                        </div>
+                        <span class="status ${statusClass(item.status)}">${item.status.replaceAll('_', ' ')}</span>
+                    </div>
+                `).join('')
+                : '<div class="empty-state">No products found yet. Add your first listing to begin.</div>';
+
+            const orders = data.recent_orders || [];
+            const ordersList = document.getElementById('orders-list');
+            ordersList.innerHTML = orders.length
+                ? orders.map((item) => `
+                    <div class="list-item">
+                        <div>
+                            <h4>Order #${item.id}</h4>
+                            <p>${formatMoney(item.total_amount)} · ${item.item_count || 0} item(s)</p>
+                            <small>${formatDate(item.created_at)}</small>
+                        </div>
+                        <span class="status ${statusClass(item.status)}">${item.status_display || item.status}</span>
+                    </div>
+                `).join('')
+                : '<div class="empty-state">No order activity yet.</div>';
+
+            drawTrend(orders);
+        }
+
+        async function loadDashboard() {
+            const token = getStoredToken();
+            if (!token) {
+                document.getElementById('hero-title').textContent = 'Sign in to view your live store.';
+                document.getElementById('hero-copy').textContent = 'This dashboard is ready for the seller role, but live data needs an authenticated session.';
+                document.getElementById('metrics-grid').innerHTML = `
+                    <div class="metric-card"><div class="tag">Guest</div><strong>--</strong><span>Total products</span></div>
+                    <div class="metric-card"><div class="tag">Guest</div><strong>--</strong><span>Active products</span></div>
+                    <div class="metric-card"><div class="tag">Guest</div><strong>--</strong><span>Pending approvals</span></div>
+                    <div class="metric-card"><div class="tag">Guest</div><strong>--</strong><span>Orders</span></div>
+                    <div class="metric-card"><div class="tag">Guest</div><strong>--</strong><span>Revenue</span></div>
+                `;
+                document.getElementById('products-list').innerHTML = '<div class="empty-state">Please sign in to load your inventory.</div>';
+                document.getElementById('orders-list').innerHTML = '<div class="empty-state">Please sign in to load your orders.</div>';
+                document.getElementById('verification-list').innerHTML = '<div class="empty-state">Please sign in to load verification data.</div>';
+                document.getElementById('notifications-list').innerHTML = '<div class="empty-state">Please sign in to load notifications.</div>';
+                return;
+            }
+
+            try {
+                const [dashboard, analytics, verification] = await Promise.all([
+                    fetchJson('/api/sellers/dashboard/'),
+                    fetchJson('/api/sellers/analytics/'),
+                    fetchJson('/api/auth/verification/status/'),
+                ]);
+
+                state.dashboard = dashboard;
+                state.analytics = analytics;
+                state.verification = verification;
+                renderMetrics(dashboard);
+            } catch (error) {
+                setError(error.message);
+            }
+        }
+
+        loadDashboard();
+        loadUserProfile();
     </script>
+    </div>
 </body>
+
 </html>

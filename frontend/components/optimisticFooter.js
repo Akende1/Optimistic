@@ -1,0 +1,18 @@
+function footer(){
+    return `
+    <footer style="padding:28px 12px;text-align:center;background:transparent;border-top:1px solid rgba(255,255,255,0.04);">
+        <div style="max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:14px;align-items:center;">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+                <a class="footer-btn" href="/buyer-dashboard.html" style="padding:8px 12px;border-radius:8px;background:rgba(139,149,255,0.08);color:inherit;text-decoration:none">Buyer Hub</a>
+                <a class="footer-btn" href="/seller-store-v2.html" style="padding:8px 12px;border-radius:8px;background:rgba(139,149,255,0.08);color:inherit;text-decoration:none">Seller Center</a>
+                <a class="footer-btn" href="/contact.html" style="padding:8px 12px;border-radius:8px;background:rgba(139,149,255,0.08);color:inherit;text-decoration:none">Logistics</a>
+                <a class="footer-btn" href="/contact.html" style="padding:8px 12px;border-radius:8px;background:rgba(139,149,255,0.08);color:inherit;text-decoration:none">Support</a>
+                <a class="footer-btn" href="/privacy.html" style="padding:8px 12px;border-radius:8px;background:rgba(139,149,255,0.08);color:inherit;text-decoration:none">Privacy Policy</a>
+                <a class="footer-btn" href="/terms.html" style="padding:8px 12px;border-radius:8px;background:rgba(139,149,255,0.08);color:inherit;text-decoration:none">Terms of Use</a>
+            </div>
+            <div style="color:#9ea9c5;font-size:13px;">© 2026 Optimistic. All rights reserved.</div>
+        </div>
+    </footer>`;
+}
+
+export default footer;

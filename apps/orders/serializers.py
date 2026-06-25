@@ -1,9 +1,10 @@
 from rest_framework import serializers
 from .models import Order, OrderItem
 from apps.products.serializers import ProductSerializer
+from apps.common.mixins import ImageURLMixin
 
 
-class OrderItemSerializer(serializers.ModelSerializer):
+class OrderItemSerializer(ImageURLMixin, serializers.ModelSerializer):
     """
     OrderItem serializer with product and seller details.
     
@@ -35,10 +36,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
         if obj.product and hasattr(obj.product, 'images'):
             primary_image = obj.product.images.filter(is_primary=True).first()
             if primary_image:
-                request = self.context.get('request')
-                if request:
-                    return request.build_absolute_uri(primary_image.image.url)
-                return primary_image.image.url
+                return self.get_image_url(primary_image.image)
         return None
 
 
@@ -85,7 +83,9 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = [
-            'id', 'buyer', 'buyer_username', 'total_amount', 'calculated_total',
+            'id', 'buyer', 'buyer_username', 'order_type', 'po_number', 'company_name', 'company_tax_id',
+            'payment_terms', 'procurement_notes', 'requested_fulfillment_date',
+            'total_amount', 'calculated_total',
             'status', 'status_display',
             'shipping_address', 'delivery_zone', 'delivery_instructions',
             'delivery_partner', 'delivery_partner_name',
@@ -110,8 +110,20 @@ class OrderCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = [
+            'order_type', 'po_number', 'company_name', 'company_tax_id', 'payment_terms',
+            'procurement_notes', 'requested_fulfillment_date',
             'total_amount', 'shipping_address', 'delivery_zone', 'delivery_instructions'
         ]
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        order_type = attrs.get('order_type', 'RETAIL')
+        if order_type == 'PURCHASE_ORDER':
+            if not attrs.get('po_number'):
+                raise serializers.ValidationError({'po_number': 'PO number is required for purchase-order checkout.'})
+            if not attrs.get('company_name'):
+                raise serializers.ValidationError({'company_name': 'Company name is required for purchase-order checkout.'})
+        return attrs
     
     def create(self, validated_data):
         # Set buyer from request user

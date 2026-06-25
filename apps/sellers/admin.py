@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Seller
+from .models import Seller, SellerVerification
 
 
 @admin.register(Seller)
@@ -36,5 +36,26 @@ class SellerAdmin(admin.ModelAdmin):
         }),
         ('Timestamps', {
             'fields': ('created_at',)
+        }),
+    )
+
+
+@admin.register(SellerVerification)
+class SellerVerificationAdmin(admin.ModelAdmin):
+    """Admin view for KYC document review."""
+    list_display = ['seller', 'status', 'submitted_at', 'reviewed_at', 'reviewed_by']
+    list_filter = ['status', 'submitted_at', 'reviewed_at']
+    search_fields = ['seller__store_name', 'seller__user__username', 'government_id_number']
+    readonly_fields = ['submitted_at', 'reviewed_at', 'reviewed_by', 'rejection_reason']
+
+    fieldsets = (
+        ('Seller', {
+            'fields': ('seller',)
+        }),
+        ('Identity Documents', {
+            'fields': ('government_id_type', 'government_id_number', 'government_id_front', 'government_id_back', 'selfie_with_id')
+        }),
+        ('Review', {
+            'fields': ('status', 'rejection_reason', 'submitted_at', 'reviewed_at', 'reviewed_by')
         }),
     )

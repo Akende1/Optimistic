@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'apps.reviews',
     'apps.finances',
     'apps.disputes',
+    'apps.rfq',
 ]
 
 MIDDLEWARE = [
@@ -54,6 +55,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'apps.common.api.ApiExceptionMiddleware',
     'apps.accounts.middleware.RoleBasedAccessMiddleware',  # Role-based access control
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -85,6 +87,12 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        'OPTIONS': {
+            # Increase timeout to reduce "database is locked" during concurrent dev requests
+            'timeout': 20,
+            # Allow connections across threads in dev server
+            'check_same_thread': False,
+        },
     }
 }
 
@@ -126,7 +134,7 @@ USE_I18N = True
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
     BASE_DIR / 'frontend',  # Serve CSS, JS from frontend directory
@@ -156,6 +164,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ),
+    'EXCEPTION_HANDLER': 'apps.common.api.api_exception_handler',
     
     # Pagination: Limit response size
     # PageNumberPagination: ?page=1, ?page=2, etc.

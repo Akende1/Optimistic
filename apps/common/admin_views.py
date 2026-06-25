@@ -29,10 +29,13 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.views import APIView
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from apps.sellers.models import Seller
+from apps.sellers.models import Seller, SellerVerification
 from apps.products.models import Product
 from apps.notifications.signals import seller_verified
 from apps.orders.models import Order
+from apps.logistics.models import Delivery, DeliveryPartner
+from apps.disputes.models import Dispute
+from apps.common.utils import log_audit
 from datetime import datetime, timedelta
 from django.db.models import Sum
 
@@ -79,12 +82,24 @@ class AdminModerationViewSet(viewsets.ViewSet):
                 return Response({
                     'error': 'Seller is already verified.'
                 }, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                verification = seller.kyc_documents
+            except SellerVerification.DoesNotExist:
+                return Response({
+                    'error': 'Seller has not submitted KYC documents yet.'
+                }, status=status.HTTP_400_BAD_REQUEST)
             
-            seller.verified = True
-            seller.save()
-            
-            # Trigger notification signal
-            seller_verified.send(sender=self.__class__, seller=seller)
+            verification.approve(request.user)
+
+            log_audit(
+                actor=request.user,
+                action='USER_REINSTATE',
+                target_type='Seller',
+                target_id=seller.id,
+                details={'action': 'verify_seller'},
+                request=request
+            )
             
             return Response({
                 'message': 'Seller verified successfully.',
@@ -126,6 +141,15 @@ class AdminModerationViewSet(viewsets.ViewSet):
                 return Response({
                     'error': 'Seller is already unverified.'
                 }, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                verification = seller.kyc_documents
+                verification.reject(request.user, reason or 'Unverified by admin')
+            except SellerVerification.DoesNotExist:
+                seller.verified = False
+                seller.verification_status = 'REJECTED'
+                seller.verification_notes = reason
+                seller.save(update_fields=['verified', 'verification_status', 'verification_notes'])
             
             # Suspend all active products
             active_products = Product.objects.filter(seller=seller, status='ACTIVE')
@@ -134,6 +158,19 @@ class AdminModerationViewSet(viewsets.ViewSet):
             
             seller.verified = False
             seller.save()
+
+            # Audit
+            try:
+                AuditLog.objects.create(
+                    actor=request.user,
+                    action='USER_SUSPEND',
+                    target_type='Seller',
+                    target_id=seller.id,
+                    details={'reason': reason, 'action': 'unverify_seller'},
+                    ip_address=request.META.get('REMOTE_ADDR', '')
+                )
+            except Exception:
+                pass
             
             return Response({
                 'message': 'Seller unverified and products suspended.',
@@ -154,6 +191,56 @@ class AdminModerationViewSet(viewsets.ViewSet):
             return Response({
                 'error': str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['get'], url_path='pending-verifications')
+    def pending_verifications(self, request):
+        """List sellers with submitted KYC waiting for admin review."""
+        verifications = SellerVerification.objects.select_related('seller', 'seller__user', 'reviewed_by').filter(status='PENDING').order_by('-submitted_at')
+
+        data = [{
+            'seller_id': item.seller.id,
+            'store_name': item.seller.store_name,
+            'verification_status': item.seller.verification_status,
+            'kyc_status': item.status,
+            'submitted_at': item.submitted_at,
+            'id_type': item.government_id_type,
+            'rejection_reason': item.rejection_reason,
+        } for item in verifications]
+
+        return Response({
+            'count': len(data),
+            'results': data,
+        })
+
+    @action(detail=False, methods=['post'], url_path='review-verification/(?P<seller_id>[^/.]+)')
+    def review_verification(self, request, seller_id=None):
+        """Approve or reject a KYC packet from the moderation endpoint."""
+        try:
+            seller = Seller.objects.get(id=seller_id)
+        except Seller.DoesNotExist:
+            return Response({'error': 'Seller not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            verification = seller.kyc_documents
+        except SellerVerification.DoesNotExist:
+            return Response({'error': 'Seller has not submitted KYC documents yet.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        action_name = request.data.get('action', '').upper()
+        reason = request.data.get('reason', '')
+
+        if action_name == 'APPROVE':
+            verification.approve(request.user)
+            return Response({'message': 'Seller verification approved.', 'seller_id': seller.id, 'status': seller.verification_status})
+
+        if action_name == 'REJECT':
+            if not reason:
+                return Response({'error': 'reason is required when rejecting verification.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            verification.reject(request.user, reason)
+            Product.objects.filter(seller=seller, status='ACTIVE').update(status='SUSPENDED')
+            return Response({'message': 'Seller verification rejected.', 'seller_id': seller.id, 'status': seller.verification_status, 'reason': reason})
+
+        return Response({'error': 'action must be APPROVE or REJECT.'}, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=False, methods=['get'])
     def pending_approvals(self, request):
@@ -341,6 +428,41 @@ class AdminModerationViewSet(viewsets.ViewSet):
         
         return Response(metrics, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['get'], url_path='audit-logs')
+    def audit_logs(self, request):
+        """
+        List audit logs for admin review.
+
+        GET /api/admin/moderation/audit-logs/?action=USER_SUSPEND&actor=5
+        """
+        from apps.common.models import AuditLog
+
+        qs = AuditLog.objects.all().order_by('-timestamp')
+        action = request.query_params.get('action')
+        actor = request.query_params.get('actor')
+        target_type = request.query_params.get('target_type')
+
+        if action:
+            qs = qs.filter(action=action)
+        if actor:
+            qs = qs.filter(actor__id=actor)
+        if target_type:
+            qs = qs.filter(target_type=target_type)
+
+        results = [{
+            'id': a.id,
+            'actor_id': a.actor.id,
+            'actor_username': a.actor.username,
+            'action': a.action,
+            'target_type': a.target_type,
+            'target_id': a.target_id,
+            'details': a.details,
+            'ip_address': a.ip_address,
+            'timestamp': a.timestamp,
+        } for a in qs[:200]]
+
+        return Response({'count': qs.count(), 'results': results}, status=status.HTTP_200_OK)
+
 
 class SystemMetricsView(APIView):
     """
@@ -354,6 +476,7 @@ class SystemMetricsView(APIView):
         """Get comprehensive system metrics."""
         today = timezone.now().date()
         this_month_start = timezone.make_aware(datetime(today.year, today.month, 1))
+        seven_days_ago = timezone.now() - timedelta(days=7)
         
         # Calculate total revenue
         total_revenue = Order.objects.filter(
@@ -369,13 +492,39 @@ class SystemMetricsView(APIView):
         # Count today's orders
         today_start = timezone.make_aware(datetime.combine(today, datetime.min.time()))
         today_orders = Order.objects.filter(created_at__gte=today_start).count()
+        delivered_orders = Order.objects.filter(status='DELIVERED').count()
+        total_orders = Order.objects.count()
+        average_order_value = float(total_revenue / total_orders) if total_orders else 0.0
+        open_disputes = Dispute.objects.filter(status__in=['OPEN', 'EVIDENCE', 'UNDER_REVIEW', 'ESCALATED']).count()
+        failed_deliveries = Delivery.objects.filter(status='FAILED').count()
+        pending_deliveries = Delivery.objects.filter(status__in=['REQUESTED', 'ASSIGNED', 'PICKED_UP', 'IN_TRANSIT']).count()
+        recent_users = [
+            {
+                'id': user.pk,
+                'username': user.username,
+                'role': user.role,
+                'date_joined': user.date_joined.isoformat(),
+                'is_active': user.is_active,
+            }
+            for user in User.objects.order_by('-date_joined')[:5]
+        ]
+        recent_orders = [
+            {
+                'id': order.pk,
+                'status': order.status,
+                'total_amount': float(order.total_amount),
+                'created_at': order.created_at.isoformat(),
+            }
+            for order in Order.objects.select_related('buyer').order_by('-created_at')[:5]
+        ]
         
         metrics = {
             'users': {
                 'total': User.objects.count(),
                 'buyers': User.objects.filter(role='BUYER').count(),
                 'sellers': User.objects.filter(role='SELLER').count(),
-                'admins': User.objects.filter(role='ADMIN').count()
+                'admins': User.objects.filter(role='ADMIN').count(),
+                'new_last_7_days': User.objects.filter(date_joined__gte=seven_days_ago).count(),
             },
             'products': {
                 'total': Product.objects.count(),
@@ -383,27 +532,50 @@ class SystemMetricsView(APIView):
                 'pending_approval': Product.objects.filter(status='PENDING_APPROVAL').count(),
                 'draft': Product.objects.filter(status='DRAFT').count(),
                 'suspended': Product.objects.filter(status='SUSPENDED').count(),
-                'archived': Product.objects.filter(status='ARCHIVED').count()
+                'archived': Product.objects.filter(status='ARCHIVED').count(),
+                'new_last_7_days': Product.objects.filter(created_at__gte=seven_days_ago).count(),
             },
             'orders': {
-                'total': Order.objects.count(),
+                'total': total_orders,
                 'today': today_orders,
                 'pending': Order.objects.filter(status='PENDING').count(),
                 'paid': Order.objects.filter(status='PAID').count(),
                 'in_transit': Order.objects.filter(status='IN_TRANSIT').count(),
                 'delivered': Order.objects.filter(status='DELIVERED').count(),
-                'cancelled': Order.objects.filter(status='CANCELLED').count()
+                'cancelled': Order.objects.filter(status='CANCELLED').count(),
+                'completion_rate': round((delivered_orders / total_orders) * 100, 1) if total_orders else 0,
             },
             'revenue': {
                 'total': float(total_revenue),
-                'month': float(month_revenue)
+                'month': float(month_revenue),
+                'average_order_value': average_order_value,
+                'platform_revenue_estimate': float(total_revenue) * 0.05,
             },
             'sellers': {
                 'total': Seller.objects.count(),
                 'verified': Seller.objects.filter(verified=True).count(),
-                'pending_verification': Seller.objects.filter(verified=False).count()
+                'pending_verification': Seller.objects.filter(verified=False).count(),
+                'new_last_7_days': Seller.objects.filter(created_at__gte=seven_days_ago).count(),
+            },
+            'couriers': {
+                'total': DeliveryPartner.objects.count(),
+                'verified': DeliveryPartner.objects.filter(verified=True, is_active=True).count(),
+                'pending_verification': DeliveryPartner.objects.filter(verified=False).count(),
+            },
+            'disputes': {
+                'open': open_disputes,
+                'resolved': Dispute.objects.filter(status='RESOLVED').count(),
+                'closed': Dispute.objects.filter(status='CLOSED').count(),
+            },
+            'deliveries': {
+                'failed': failed_deliveries,
+                'pending': pending_deliveries,
+                'delivered': Delivery.objects.filter(status='DELIVERED').count(),
+            },
+            'recent': {
+                'users': recent_users,
+                'orders': recent_orders,
             }
         }
         
         return Response(metrics, status=status.HTTP_200_OK)
-

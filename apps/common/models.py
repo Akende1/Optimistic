@@ -56,6 +56,12 @@ class AuditLog(models.Model):
         # System Configuration
         ('SETTINGS_CHANGE', 'System Settings Changed'),
         ('RULE_CHANGE', 'Business Rule Changed'),
+
+        # Account Verification
+        ('VERIFICATION_REQUEST', 'Verification Code Requested'),
+        ('VERIFICATION_CONFIRM_SUCCESS', 'Verification Code Confirmed'),
+        ('VERIFICATION_CONFIRM_FAILURE', 'Verification Code Failed'),
+        ('VERIFICATION_LOCKOUT', 'Verification Lockout Triggered'),
     )
     
     actor = models.ForeignKey(

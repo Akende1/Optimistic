@@ -92,7 +92,7 @@ class Review(models.Model):
         verbose_name = 'Review'
         verbose_name_plural = 'Reviews'
         ordering = ['-created_at']
-        unique_together = ['order', 'reviewer']  # One review per order
+        unique_together = ['order', 'product', 'reviewer']  # One review per delivered item
 
     def __str__(self):
         return f"Review by {self.reviewer.username} - {self.rating}⭐"

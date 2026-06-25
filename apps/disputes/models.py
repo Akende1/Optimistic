@@ -5,6 +5,18 @@ from django.utils import timezone
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from decimal import Decimal
+from django.contrib.contenttypes.models import ContentType
+
+
+from apps.common.models import AuditLog
+
+
+def _get_target_instance(resolution):
+    """Helper to resolve dispute target from a resolution."""
+    dispute = getattr(resolution, 'dispute_case', None)
+    if not dispute:
+        return None
+    return dispute.target
 
 
 class Dispute(models.Model):
@@ -346,27 +358,126 @@ class DisputeResolution(models.Model):
         if self.actions_completed:
             raise ValidationError('Actions already completed')
         
-        if self.financial_action == 'REFUND_FULL' or self.financial_action == 'REFUND_PARTIAL':
-            # Process refund through OrderFinancialSnapshot
-            if self.refund_amount:
-                # TODO: Execute refund via snapshot
+        # Resolve actions against the disputed target when possible
+        target = _get_target_instance(self)
+
+        try:
+            # Refunds
+            if self.financial_action in ('REFUND_FULL', 'REFUND_PARTIAL'):
+                # Target should be an Order or OrderItem
+                from apps.finances.models import OrderFinancialSnapshot
+
+                if not target:
+                    raise ValidationError('No dispute target available for refund')
+
+                # Get the order for the target
+                order = None
+                if hasattr(target, 'financial_snapshot') and getattr(target, 'financial_snapshot'):
+                    snapshot = target.financial_snapshot
+                elif hasattr(target, 'order'):
+                    order = target.order
+                    snapshot = getattr(order, 'financial_snapshot', None)
+                elif target.__class__.__name__ == 'Order':
+                    order = target
+                    snapshot = getattr(order, 'financial_snapshot', None)
+                else:
+                    snapshot = None
+
+                if not snapshot:
+                    raise ValidationError('Order financial snapshot not found for refund')
+
+                # Partial vs full
+                if self.financial_action == 'REFUND_PARTIAL' and self.refund_amount:
+                    snapshot.refund(partial_amount=self.refund_amount)
+                else:
+                    snapshot.refund()
+
+                # Audit
+                AuditLog.objects.create(
+                    actor=self.resolved_by,
+                    action='DISPUTE_RESOLVE_BUYER',
+                    target_type='Order',
+                    target_id=snapshot.order.id,
+                    details={'refund_amount': str(self.refund_amount or snapshot.subtotal)},
+                    ip_address='',
+                )
+
+            # Seller penalty
+            elif self.financial_action == 'SELLER_PENALTY':
+                if not self.penalty_amount:
+                    raise ValidationError('Penalty amount required')
+
+                # Try to find seller on the disputed target
+                seller = None
+                if target and hasattr(target, 'seller'):
+                    seller = target.seller
+                elif target and hasattr(target, 'order'):
+                    # pick first seller from order items when ambiguous
+                    try:
+                        seller = target.order.items.first().seller
+                    except Exception:
+                        seller = None
+
+                if not seller:
+                    raise ValidationError('Seller not found for penalty')
+
+                from apps.finances.models import EscrowAccount
+                escrow, _ = EscrowAccount.objects.get_or_create(seller=seller)
+                escrow.deduct_available(self.penalty_amount)
+
+                AuditLog.objects.create(
+                    actor=self.resolved_by,
+                    action='DISPUTE_RESOLVE_SELLER',
+                    target_type='Seller',
+                    target_id=seller.id,
+                    details={'penalty_amount': str(self.penalty_amount)},
+                    ip_address='',
+                )
+
+            # Courier penalty
+            elif self.financial_action == 'COURIER_PENALTY':
+                if not self.penalty_amount:
+                    raise ValidationError('Penalty amount required')
+
+                courier = None
+                if target and target.__class__.__name__ == 'Delivery':
+                    courier = getattr(target, 'courier', None)
+
+                if not courier:
+                    raise ValidationError('Courier not found for penalty')
+
+                from apps.logistics.models import CourierWallet
+                wallet, _ = CourierWallet.objects.get_or_create(courier=courier)
+                wallet.deduct_available(self.penalty_amount)
+
+                AuditLog.objects.create(
+                    actor=self.resolved_by,
+                    action='DISPUTE_RESOLVE_SELLER',
+                    target_type='DeliveryPartner',
+                    target_id=courier.id,
+                    details={'penalty_amount': str(self.penalty_amount)},
+                    ip_address='',
+                )
+
+            # Mark completed
+            self.actions_completed = True
+            self.actions_completed_at = timezone.now()
+            self.save()
+
+        except Exception as exc:
+            # Create audit entry for failure and raise to surface to caller
+            try:
+                AuditLog.objects.create(
+                    actor=self.resolved_by,
+                    action='ORDER_OVERRIDE',
+                    target_type='DisputeResolution',
+                    target_id=getattr(self, 'id', 0) or 0,
+                    details={'error': str(exc)},
+                    ip_address='',
+                )
+            except Exception:
                 pass
-        
-        elif self.financial_action == 'SELLER_PENALTY':
-            # Deduct from seller escrow
-            if self.penalty_amount:
-                # TODO: Deduct from EscrowAccount
-                pass
-        
-        elif self.financial_action == 'COURIER_PENALTY':
-            # Deduct from courier wallet
-            if self.penalty_amount:
-                # TODO: Deduct from CourierWallet
-                pass
-        
-        self.actions_completed = True
-        self.actions_completed_at = timezone.now()
-        self.save()
+            raise
     
     def clean(self):
         """Validate resolution data."""

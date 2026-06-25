@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 
 
 class User(AbstractUser):
@@ -92,6 +93,15 @@ class User(AbstractUser):
         blank=True,
         help_text='When phone was verified'
     )
+    email_verified = models.BooleanField(
+        default=False,
+        help_text='Email address verified via one-time code'
+    )
+    email_verified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When email was verified'
+    )
 
     class Meta:
         verbose_name = 'User'
@@ -124,6 +134,18 @@ class User(AbstractUser):
     def can_act(self):
         """Check if user can perform actions (not suspended or terminated)."""
         return self.status in ['VERIFIED', 'ACTIVE'] and self.is_active
+
+    def is_account_verified(self):
+        """Phone and email verification determine base account trust."""
+        return bool(self.phone_verified and self.email_verified)
+
+    def refresh_verification_status(self):
+        """Move account into VERIFIED after contact verification checks pass."""
+        if self.status in ['SUSPENDED', 'TERMINATED']:
+            return
+        if self.is_account_verified() and self.status == 'REGISTERED':
+            self.status = 'VERIFIED'
+            self.save(update_fields=['status'])
     
     def suspend(self, reason=''):
         """Suspend user account."""
@@ -169,6 +191,14 @@ class BuyerAddress(models.Model):
     )
     street_address = models.TextField(
         help_text='Street/building/plot number'
+    )
+    location = models.ForeignKey(
+        'logistics.ZambianLocation',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='buyer_addresses',
+        help_text='Structured delivery location (province/city/zone)'
     )
     town_city = models.CharField(
         max_length=100,
@@ -282,3 +312,47 @@ class PaymentMethod(models.Model):
         if self.is_default:
             PaymentMethod.objects.filter(user=self.user, is_default=True).update(is_default=False)
         super().save(*args, **kwargs)
+
+
+class AccountVerificationCode(models.Model):
+    """One-time verification codes for phone/email account verification."""
+
+    CHANNEL_CHOICES = (
+        ('PHONE', 'Phone'),
+        ('EMAIL', 'Email'),
+    )
+    PURPOSE_CHOICES = (
+        ('ACCOUNT_VERIFICATION', 'Account Verification'),
+    )
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='verification_codes'
+    )
+    channel = models.CharField(max_length=10, choices=CHANNEL_CHOICES, db_index=True)
+    purpose = models.CharField(max_length=30, choices=PURPOSE_CHOICES, default='ACCOUNT_VERIFICATION', db_index=True)
+    code = models.CharField(max_length=6)
+    expires_at = models.DateTimeField(db_index=True)
+    used_at = models.DateTimeField(null=True, blank=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    max_attempts = models.PositiveSmallIntegerField(default=5)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Account Verification Code'
+        verbose_name_plural = 'Account Verification Codes'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} {self.channel} code"
+
+    def is_expired(self):
+        return self.expires_at <= timezone.now()
+
+    def can_attempt(self):
+        return self.used_at is None and not self.is_expired() and self.attempts < self.max_attempts
+
+    def mark_used(self):
+        self.used_at = timezone.now()
+        self.save(update_fields=['used_at'])

@@ -9,6 +9,7 @@ from .serializers import (
     DeliveryPartnerRegistrationSerializer,
     ZambianLocationSerializer
 )
+from apps.common.api import get_user_seller
 
 
 class DeliveryViewSet(viewsets.ReadOnlyModelViewSet):
@@ -24,7 +25,10 @@ class DeliveryViewSet(viewsets.ReadOnlyModelViewSet):
         user = self.request.user
         if user.role == 'SELLER':
             # Sellers see deliveries for their orders
-            return Delivery.objects.filter(order__seller=user.seller)
+            seller = get_user_seller(user)
+            if seller is None:
+                return Delivery.objects.none()
+            return Delivery.objects.filter(order__items__seller=seller).distinct()
         else:
             # Buyers see their own order deliveries
             return Delivery.objects.filter(order__buyer=user)

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimistic | Category</title>
+    <link rel="stylesheet" href="./style/storefront-2026.css">
+</head>
+<body>
+    <div class="sf-shell">
+        <section class="sf-card sf-hero-main" style="margin-top:18px; text-align:center;">
+            <span class="sf-kicker">Legacy redirect</span>
+            <h1>Loading category products...</h1>
+            <p class="sf-muted" id="route-copy">Routing to the modern realtime catalog.</p>
+            <div class="sf-actions" style="justify-content:center;">
+                <a class="sf-btn primary" id="route-link" href="./products.html">Open catalog now</a>
+            </div>
+        </section>
+    </div>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const fromQuery = params.get('category_slug') || '';
+        const fromStorage = (() => {
+            try {
+                return JSON.parse(localStorage.getItem('category') || '""');
+            } catch (_) {
+                return '';
+            }
+        })();
+
+        const mapping = {
+            'Action & Sports Camera': 'action-sports-camera',
+            'Action & Sports Camera Accessory': 'action-sports-camera-accessory',
+            'Baby & Pet Monitor': 'baby-pet-monitor',
+            'Backgrounds': 'backgrounds'
+        };
+
+        const slug = fromQuery || mapping[fromStorage] || '';
+        const target = slug ? `./products.html?category_slug=${encodeURIComponent(slug)}` : './products.html';
+        document.getElementById('route-link').setAttribute('href', target);
+        if (slug) {
+            document.getElementById('route-copy').textContent = `Routing to ${slug.replaceAll('-', ' ')} products.`;
+        }
+        window.location.replace(target);
+    </script>
+</body>
+</html>

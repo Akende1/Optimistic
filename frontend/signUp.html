@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimistic | Create Account</title>
+    <link rel="stylesheet" href="./style/footer.css">
+    <style>
+        :root {
+            --bg: #08101d;
+            --panel: rgba(14, 20, 35, 0.9);
+            --border: rgba(255, 255, 255, 0.1);
+            --text: #eff4ff;
+            --muted: #9baeff;
+            --accent: #8b95ff;
+            --accent-2: #58a6ff;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(127, 140, 255, 0.18), transparent 28%),
+                radial-gradient(circle at 90% 0%, rgba(88, 166, 255, 0.12), transparent 24%),
+                linear-gradient(180deg, #06101e 0%, #050913 100%);
+            color: var(--text);
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .signup-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 20px 24px;
+        }
+
+        .brand {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            color: var(--accent);
+        }
+
+        .topbar-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .topbar-link {
+            padding: 10px 14px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.03);
+            font-size: 14px;
+        }
+
+        .topbar-link.primary {
+            background: var(--accent);
+            color: #050913;
+            border-color: transparent;
+            font-weight: 700;
+        }
+
+        .signup-shell {
+            width: min(1400px, calc(100% - 24px));
+            margin: 0 auto;
+            padding: 8px 0 24px;
+        }
+
+        .signup-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 0.95fr) minmax(360px, 0.8fr);
+            gap: 24px;
+            align-items: stretch;
+        }
+
+        .story-card,
+        .form-card {
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            background: linear-gradient(180deg, rgba(16, 23, 39, 0.9), rgba(10, 16, 28, 0.92));
+            box-shadow: 0 28px 80px rgba(0, 0, 0, 0.35);
+            overflow: hidden;
+        }
+
+        .story-card {
+            padding: 36px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 720px;
+            position: relative;
+        }
+
+        .story-card::before {
+            content: "";
+            position: absolute;
+            inset: auto -10% -18% auto;
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(139, 149, 255, 0.22), transparent 70%);
+            pointer-events: none;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            width: fit-content;
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(139, 149, 255, 0.22);
+            background: rgba(139, 149, 255, 0.08);
+            color: #c8cdff;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .story-title {
+            margin: 18px 0 14px;
+            font-size: clamp(34px, 5vw, 58px);
+            line-height: 0.98;
+            letter-spacing: -0.04em;
+            max-width: 10ch;
+        }
+
+        .story-copy {
+            max-width: 56ch;
+            color: #b7c0dc;
+            font-size: 15px;
+            line-height: 1.75;
+        }
+
+        .benefit-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+            margin-top: 28px;
+        }
+
+        .benefit {
+            padding: 16px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .benefit strong {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .benefit span {
+            color: #9ea9c5;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .story-footer {
+            margin-top: 28px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            color: #9ea9c5;
+            font-size: 13px;
+        }
+
+        .story-footer b {
+            color: var(--text);
+        }
+
+        .form-card {
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .form-header h2 {
+            margin: 0;
+            font-size: 28px;
+            letter-spacing: -0.03em;
+        }
+
+        .form-header p {
+            margin: 8px 0 0;
+            color: #a7b2cf;
+            line-height: 1.6;
+        }
+
+        .signup-form {
+            display: grid;
+            gap: 14px;
+        }
+
+        .field-group {
+            display: grid;
+            gap: 8px;
+        }
+
+        .field-group label {
+            font-size: 13px;
+            color: #cdd5eb;
+        }
+
+        .field-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .signup-form input[type="text"],
+        .signup-form input[type="password"],
+        .signup-form input[type="number"] {
+            width: 100%;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text);
+            padding: 13px 14px;
+            font: inherit;
+            outline: none;
+            transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+        }
+
+        .signup-form input::placeholder {
+            color: rgba(239, 244, 255, 0.45);
+        }
+
+        .signup-form input:focus {
+            border-color: rgba(139, 149, 255, 0.55);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .role-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .role-option {
+            position: relative;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .role-option input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .role-option strong {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .role-option span {
+            color: #9ea9c5;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .role-option:has(input:checked) {
+            border-color: rgba(139, 149, 255, 0.55);
+            background: rgba(139, 149, 255, 0.12);
+            box-shadow: 0 12px 24px rgba(139, 149, 255, 0.12);
+        }
+
+        .help-text {
+            color: #94a0be;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .terms-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            color: #b4bdd6;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .terms-row input {
+            margin-top: 3px;
+        }
+
+        .submit-button {
+            width: 100%;
+            border: 0;
+            border-radius: 16px;
+            padding: 14px 16px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: #05101c;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .submit-button:hover {
+            transform: translateY(-1px);
+            opacity: 0.96;
+        }
+
+        .form-footer {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            color: #9ea9c5;
+            font-size: 13px;
+            padding-top: 4px;
+        }
+
+        .form-footer a {
+            color: #c7d0ff;
+        }
+
+        #footersection {
+            margin-top: 24px;
+        }
+
+        @media (max-width: 980px) {
+            .signup-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .story-card {
+                min-height: auto;
+            }
+
+            .benefit-grid,
+            .role-grid,
+            .field-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .signup-topbar {
+                padding: 16px 6px 10px;
+            }
+
+            .signup-shell {
+                width: calc(100% - 12px);
+            }
+
+            .story-card,
+            .form-card {
+                border-radius: 22px;
+                padding: 20px;
+            }
+
+            .story-title {
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="signup-topbar">
+        <a href="./index.html" class="brand">OPTIMISTIC</a>
+        <nav class="topbar-actions" aria-label="Auth navigation">
+            <a href="./products.html" class="topbar-link">Browse products</a>
+            <a href="./signin.html" class="topbar-link">Sign in</a>
+        </nav>
+    </header>
+
+    <main class="signup-shell">
+        <section class="signup-grid">
+            <article class="story-card">
+                <div>
+                    <span class="eyebrow">Global B2B + B2C marketplace</span>
+                    <h1 class="story-title">Create one account for buying, selling, or both.</h1>
+                    <p class="story-copy">
+                        Join Optimistic with a storefront-ready account, secure checkout, and seller tools in the same ecosystem.
+                        If you choose Both, the account is created as seller-capable and can also shop immediately.
+                    </p>
+                    <div class="benefit-grid">
+                        <div class="benefit">
+                            <strong>Buyer access</strong>
+                            <span>Browse products, place orders, and manage your delivery addresses from one profile.</span>
+                        </div>
+                        <div class="benefit">
+                            <strong>Seller tools</strong>
+                            <span>Publish inventory, track orders, and manage your store dashboard.</span>
+                        </div>
+                        <div class="benefit">
+                            <strong>One identity</strong>
+                            <span>Keep a single login while your account can operate in both modes.</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="story-footer">
+                    <span><b>Fast setup</b> with email verification</span>
+                    <span><b>Role-aware</b> checkout and dashboards</span>
+                    <span><b>Mobile-first</b> form and navigation</span>
+                </div>
+            </article>
+
+            <article class="form-card">
+                <div class="form-header">
+                    <h2>Start your account</h2>
+                    <p>Choose the role you need today. You can still buy as a seller-capable account.</p>
+                </div>
+
+                <form class="signup-form" onsubmit="userDetails(event)">
+                    <div class="field-grid">
+                        <div class="field-group">
+                            <label for="country">Country / Region</label>
+                            <input type="text" id="country" placeholder="Zambia" value="Zambia">
+                        </div>
+                        <div class="field-group">
+                            <label for="phone">Phone number</label>
+                            <input id="phone" type="number" placeholder="260 XXX XXX XXX">
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label>Choose your role</label>
+                        <div class="role-grid">
+                            <label class="role-option">
+                                <input type="radio" value="Buyer" name="trade_role" checked>
+                                <strong>Buyer</strong>
+                                <span>Shop, track orders, and manage your delivery addresses.</span>
+                            </label>
+                            <label class="role-option">
+                                <input type="radio" value="Seller" name="trade_role">
+                                <strong>Seller</strong>
+                                <span>List products, manage inventory, and handle orders.</span>
+                            </label>
+                            <label class="role-option">
+                                <input type="radio" value="Both" name="trade_role">
+                                <strong>Both</strong>
+                                <span>Create a seller-capable account that can also buy.</span>
+                            </label>
+                        </div>
+                        <div class="help-text">Both is stored as seller-capable access on the backend so the same account can shop and sell.</div>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="mail">Email address</label>
+                        <input type="text" id="mail" placeholder="you@example.com">
+                    </div>
+
+                    <div class="field-grid">
+                        <div class="field-group">
+                            <label for="pass">Password</label>
+                            <input type="password" id="pass" placeholder="Create a password">
+                        </div>
+                        <div class="field-group">
+                            <label for="confirmPass">Confirm password</label>
+                            <input type="password" id="confirmPass" placeholder="Repeat your password">
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label for="company">Company name</label>
+                        <input type="text" id="company" placeholder="Required for seller-capable accounts">
+                    </div>
+
+                    <div class="field-grid">
+                        <div class="field-group">
+                            <label for="fname">First name</label>
+                            <input type="text" id="fname" placeholder="First name">
+                        </div>
+                        <div class="field-group">
+                            <label for="lname">Last name</label>
+                            <input type="text" id="lname" placeholder="Last name">
+                        </div>
+                    </div>
+
+                    <label class="terms-row">
+                        <input type="checkbox">
+                        <span>Please verify you are not a robot.</span>
+                    </label>
+
+                    <label class="terms-row">
+                        <input type="checkbox">
+                        <span>By creating an Optimistic account, I agree to the Membership Agreement and service emails.</span>
+                    </label>
+
+                    <button type="submit" class="submit-button">Create account</button>
+
+                    <div class="form-footer">
+                        <span>Already have an account? <a href="./signin.html">Sign in</a></span>
+                        <span>Need to browse first? <a href="./products.html">Explore products</a></span>
+                    </div>
+                </form>
+            </article>
+        </section>
+
+        <section id="footersection"></section>
+    </main>
+</body>
+</html>
+
+<script type="module">
+    import footer from "./components/optimisticFooter.js";
+    document.querySelector("#footersection").innerHTML = footer();
+</script>
+<script>
+    function getSelectedRole() {
+        const selected = document.querySelector('input[name="trade_role"]:checked');
+        return selected ? selected.value : 'Buyer';
+    }
+
+    async function userDetails(event) {
+        event.preventDefault();
+        try {
+            const roleChoice = getSelectedRole();
+            const firstName = document.getElementById('fname').value.trim();
+            const lastName = document.getElementById('lname').value.trim();
+            const companyName = document.getElementById('company').value.trim();
+            const fullName = `${firstName} ${lastName}`.trim();
+            const password = document.getElementById('pass').value;
+            const confirmPass = document.getElementById('confirmPass').value;
+
+            if (password !== confirmPass) return alert("Confirm password doesn't match");
+
+            const normalizedRole = roleChoice === 'Buyer' ? 'BUYER' : roleChoice === 'Seller' ? 'SELLER' : 'BOTH';
+            const payload = {
+                email: document.getElementById('mail').value.trim(),
+                full_name: fullName,
+                phone_number: document.getElementById('phone').value.trim(),
+                password,
+                confirm_password: confirmPass,
+                role: normalizedRole,
+            };
+
+            if (normalizedRole !== 'BUYER') {
+                payload.seller_type = 'BUSINESS';
+                payload.shop_name = companyName || `${fullName || 'New'} Store`;
+            }
+
+            const response = await fetch('/api/auth/register/', {
+                method: 'POST',
+                body: JSON.stringify(payload),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const res = await response.json();
+
+            if (!response.ok) {
+                if (res.errors) return alert(res.errors[0].key + ' : ' + res.errors[0].message);
+                return alert(res.error || res.detail || 'Unable to register');
+            }
+
+            if (res.access) {
+                localStorage.setItem('access', res.access);
+                localStorage.setItem('Authorization', res.access);
+            }
+            if (res.refresh) {
+                localStorage.setItem('refresh', res.refresh);
+            }
+            if (res.user) {
+                localStorage.setItem('optimisticUser', JSON.stringify(res.user));
+            }
+            localStorage.setItem('optimisticAccountMode', normalizedRole);
+
+            const role = res.user?.role || (normalizedRole === 'BUYER' ? 'BUYER' : 'SELLER');
+            if (role === 'SELLER') {
+                window.location.href = './seller-dashboard-v2.html';
+            } else {
+                window.location.href = './buyer-dashboard.html';
+            }
+        } catch (error) {
+            alert(error.message || 'Unable to register');
+        }
+    }
+</script>

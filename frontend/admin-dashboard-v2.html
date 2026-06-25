@@ -1,603 +1,372 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <title>System Control — Optimistic</title>
+    <title>Optimistic System Admin</title>
+    <link rel="stylesheet" href="./style/dashboard.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace; 
-            background: #0a0a0a; 
-            color: #e0e0e0; 
-            line-height: 1.6;
+        :root {
+            --bg: #071015;
+            --panel: rgba(13, 19, 33, 0.92);
+            --border: rgba(255,255,255,0.08);
+            --text: #f4f7fb;
+            --muted: #8f9fb3;
+            --accent: #7f8cff;
+            --accent-2: #58a6ff;
+            --accent-3: #8d7bff;
+            --shadow: 0 24px 72px rgba(0, 0, 0, 0.32);
         }
-        
-        nav { 
-            background: #111; 
-            border-bottom: 1px solid #333; 
-            padding: 1rem 0; 
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(127, 140, 255, 0.18), transparent 28%),
+                radial-gradient(circle at top right, rgba(88, 166, 255, 0.14), transparent 26%),
+                linear-gradient(180deg, #081018 0%, #04070b 100%);
+            padding-top: 60px;
         }
-        nav .nav-content { 
-            max-width: 1400px; 
-            margin: 0 auto; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding: 0 2rem; 
+        .shell { max-width: 1400px; margin: 0 auto; padding: 24px; display: grid; gap: 18px; }
+        .bar, .card, .metric, .item {
+            border: 1px solid var(--border);
+            background: var(--panel);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
         }
-        nav .brand { 
-            font-weight: 700; 
-            font-size: 1.2rem; 
-            color: #ff3b30; 
-            letter-spacing: 1px;
-        }
-        nav .nav-links { 
-            display: flex; 
-            gap: 2rem; 
-            list-style: none; 
-        }
-        nav .nav-links a { 
-            text-decoration: none; 
-            color: #888; 
-            font-weight: 500; 
-            font-size: 0.9rem;
-            transition: color 0.2s;
-        }
-        nav .nav-links a:hover { color: #ff3b30; }
-        nav .nav-links a.active { color: #ff3b30; border-bottom: 2px solid #ff3b30; padding-bottom: 0.25rem; }
-        
-        .container { 
-            max-width: 1400px; 
-            margin: 0 auto; 
-            padding: 2rem; 
-        }
-        
-        .header { 
-            margin-bottom: 2rem; 
-        }
-        .header h1 { 
-            font-size: 1.75rem; 
-            font-weight: 700; 
-            color: #fff; 
-            margin-bottom: 0.5rem;
-        }
-        .header p { 
-            color: #666; 
-            font-size: 0.95rem; 
-        }
-        
-        .metrics-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-            gap: 1.5rem; 
-            margin-bottom: 3rem; 
-        }
-        
-        .metric-card { 
-            background: #151515; 
-            border: 1px solid #222; 
-            border-radius: 8px; 
-            padding: 1.5rem; 
-            cursor: pointer; 
-            transition: all 0.2s; 
-        }
-        .metric-card:hover { 
-            border-color: #ff3b30; 
-            transform: translateY(-2px); 
-        }
-        
-        .metric-label { 
-            font-size: 0.8rem; 
-            font-weight: 600; 
-            color: #666; 
-            text-transform: uppercase; 
-            letter-spacing: 1px; 
-            margin-bottom: 0.75rem; 
-        }
-        
-        .metric-value { 
-            font-size: 2rem; 
-            font-weight: 800; 
-            color: #fff; 
-            margin-bottom: 0.5rem; 
-        }
-        
-        .metric-subtitle { 
-            font-size: 0.85rem; 
-            color: #666; 
-        }
-        
-        .metric-trend { 
-            display: inline-block; 
-            font-size: 0.8rem; 
-            padding: 0.25rem 0.5rem; 
-            border-radius: 4px; 
-            margin-top: 0.5rem;
-        }
-        .metric-trend.up { background: #1a3a1a; color: #34c759; }
-        .metric-trend.down { background: #3a1a1a; color: #ff3b30; }
-        
-        .metric-card.critical { border-left: 3px solid #ff3b30; }
-        .metric-card.warning { border-left: 3px solid #ff9500; }
-        .metric-card.success { border-left: 3px solid #34c759; }
-        
-        .loading { 
-            text-align: center; 
-            padding: 4rem; 
-            color: #666; 
-        }
-        
-        .error-state { 
-            background: #3a1a1a; 
-            border: 1px solid #ff3b30; 
-            padding: 1.5rem; 
-            border-radius: 8px; 
-            color: #ff3b30; 
-            text-align: center;
-        }
-        
-        .superuser-section {
-            background: #151515;
-            border: 2px solid #ff9500;
-            border-radius: 8px;
-            padding: 2rem;
-            margin-top: 3rem;
-        }
-        
-        .superuser-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-        
-        .superuser-header h2 {
-            color: #ff9500;
-            font-size: 1.3rem;
-            font-weight: 700;
-        }
-        
-        .btn-primary {
-            background: #ff3b30;
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: background 0.2s;
-            font-weight: 600;
-        }
-        
-        .btn-primary:hover {
-            background: #e5342a;
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
+        .bar { padding: 18px 22px; display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .logo { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; background: linear-gradient(135deg, var(--accent), #5ea7ff); font-weight: 800; }
+        h1, h2, h3, h4, p { margin: 0; }
+        .muted { color: var(--muted); }
+        .pill { padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); }
+        .hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(360px, 0.75fr); gap: 18px; }
+        .card { padding: 24px; }
+        .hero h2 { font-size: clamp(2rem, 4vw, 3.4rem); line-height: 0.98; margin: 14px 0; max-width: 12ch; }
+        .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+        .btn { padding: 12px 16px; border-radius: 14px; border: none; font-weight: 700; cursor: pointer; }
+        .btn-primary { background: linear-gradient(135deg, var(--accent), #5ea7ff); color: white; }
+        .btn-secondary { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border); }
+        .metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+        .metric { padding: 18px; min-height: 130px; }
+        .metric strong { display: block; font-size: 1.9rem; margin: 12px 0 8px; }
+        .grid { display: grid; grid-template-columns: 1.08fr 0.92fr; gap: 18px; }
+        .stack { display: grid; gap: 12px; }
+        .item { padding: 16px; display: grid; gap: 8px; }
+        .row { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .status { padding: 7px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; }
+        .ok { background: rgba(99,216,179,0.14); color: #c0f6e5; }
+        .warn { background: rgba(255,139,94,0.14); color: #ffd2bf; }
+        .bad { background: rgba(111,146,255,0.14); color: #d8e4ff; }
+        .empty { padding: 20px; border: 1px dashed rgba(255,255,255,0.12); border-radius: 18px; color: var(--muted); }
+        .error { display:none; padding: 14px 16px; border-radius: 16px; background: rgba(255,139,94,0.14); border: 1px solid rgba(255,139,94,0.22); color: #ffd2bf; }
+        .chart {
             width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
+            min-height: 220px;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.03);
+            padding: 12px;
         }
-        
-        .modal.active {
-            display: flex;
-        }
-        
-        .modal-content {
-            background: #1a1a1a;
-            border: 1px solid #333;
-            border-radius: 12px;
-            padding: 2rem;
-            max-width: 600px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid #333;
-        }
-        
-        .modal-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #ff3b30;
-        }
-        
-        .btn-close {
-            background: none;
-            border: none;
-            font-size: 2rem;
-            cursor: pointer;
-            color: #666;
-            line-height: 1;
-        }
-        
-        .btn-close:hover {
-            color: #ff3b30;
-        }
-        
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: #e0e0e0;
-            font-size: 0.9rem;
-        }
-        
-        .form-group input {
-            width: 100%;
-            padding: 0.75rem;
-            background: #0a0a0a;
-            border: 1px solid #333;
-            border-radius: 6px;
-            font-size: 1rem;
-            color: #e0e0e0;
-        }
-        
-        .form-group input:focus {
-            outline: none;
-            border-color: #ff3b30;
-        }
-        
-        .admin-list {
-            margin-top: 1rem;
-        }
-        
-        .admin-item {
-            background: #0a0a0a;
-            border: 1px solid #222;
-            border-radius: 6px;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-        }
-        
-        .admin-item-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .admin-name {
-            font-weight: 600;
-            color: #fff;
-        }
-        
-        .admin-role {
-            font-size: 0.8rem;
-            color: #666;
-            text-transform: uppercase;
-        }
-        
-        .superuser-badge {
-            background: #ff9500;
-            color: #000;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            margin-left: 0.5rem;
+        @media (max-width: 1120px) {
+            .hero, .grid, .metrics { grid-template-columns: 1fr; }
         }
     </style>
 </head>
+
 <body>
-    <nav>
-        <div class="nav-content">
-            <div class="brand">⚡ SYSTEM CONTROL</div>
-            <ul class="nav-links">
-                <li><a href="admin-dashboard-v2.html" class="active">Dashboard</a></li>
-                <li><a href="admin-users-v2.html">Users</a></li>
-                <li><a href="admin-products-v2.html">Products</a></li>
-                <li><a href="admin-orders-v2.html">Orders</a></li>
-                <li><a href="admin-disputes-v2.html">Disputes</a></li>
-                <li><a href="admin-finances-v2.html">Finances</a></li>
-                <li><a href="admin-reports-v2.html">Reports</a></li>
-                <li><a href="#" onclick="api.logout()" style="color: #ff3b30;">Logout</a></li>
-            </ul>
+    <div class="dashboard-topbar" style="position: fixed; top: 0; left: 0; right: 0; z-index: 100;">
+        <div class="dashboard-topbar-brand">OPTIMISTIC</div>
+        <div class="dashboard-topbar-nav">
+            <a href="./index.html">Marketplace</a>
+            <a href="./admin-dashboard-v2.html" class="active">Dashboard</a>
+            <a href="./admin-users-v2.html">Users</a>
+            <a href="./admin-products-v2.html">Products</a>
+            <a href="./admin-orders-v2.html">Orders</a>
         </div>
-    </nav>
-
-    <div class="container">
-        <div class="header">
-            <h1>System Overview</h1>
-            <p>Global health metrics — read-only visibility</p>
+        <div class="dashboard-topbar-actions">
+            <span class="dashboard-topbar-user" id="user-display">Loading...</span>
+            <a href="./admin-settings-v2.html" class="dashboard-topbar-button ghost">Settings</a>
+            <button class="dashboard-topbar-button" onclick="signOut()">Sign out</button>
         </div>
-
-        <div id="loading" class="loading">Loading system metrics...</div>
-        <div id="error" class="error-state" style="display: none;"></div>
-
-        <div id="metrics" style="display: none;">
-            <div class="metrics-grid">
-                <!-- GMV -->
-                <div class="metric-card" onclick="location.href='admin-reports-v2.html'">
-                    <div class="metric-label">Total GMV</div>
-                    <div class="metric-value" id="gmv-total">K0.00</div>
-                    <div class="metric-subtitle">Gross merchandise value</div>
-                </div>
-
-                <!-- Today's GMV -->
-                <div class="metric-card" onclick="location.href='admin-reports-v2.html'">
-                    <div class="metric-label">Today's GMV</div>
-                    <div class="metric-value" id="gmv-today">K0.00</div>
-                    <div class="metric-subtitle">Sales volume today</div>
-                </div>
-
-                <!-- Platform Revenue -->
-                <div class="metric-card success" onclick="location.href='admin-finances-v2.html'">
-                    <div class="metric-label">Platform Revenue</div>
-                    <div class="metric-value" id="platform-revenue">K0.00</div>
-                    <div class="metric-subtitle">Commission earned</div>
-                </div>
-
-                <!-- Total Escrow -->
-                <div class="metric-card warning" onclick="location.href='admin-finances-v2.html'">
-                    <div class="metric-label">Total Escrow</div>
-                    <div class="metric-value" id="total-escrow">K0.00</div>
-                    <div class="metric-subtitle">Funds held by platform</div>
-                </div>
-
-                <!-- Pending Release -->
-                <div class="metric-card warning" onclick="location.href='admin-finances-v2.html'">
-                    <div class="metric-label">Pending Release</div>
-                    <div class="metric-value" id="pending-release">K0.00</div>
-                    <div class="metric-subtitle">Awaiting disbursement</div>
-                </div>
-
-                <!-- Active Sellers -->
-                <div class="metric-card" onclick="location.href='admin-users-v2.html'">
-                    <div class="metric-label">Active Sellers</div>
-                    <div class="metric-value" id="active-sellers">0</div>
-                    <div class="metric-subtitle">Verified sellers</div>
-                </div>
-
-                <!-- Active Buyers -->
-                <div class="metric-card" onclick="location.href='admin-users-v2.html'">
-                    <div class="metric-label">Active Buyers</div>
-                    <div class="metric-value" id="active-buyers">0</div>
-                    <div class="metric-subtitle">Registered buyers</div>
-                </div>
-
-                <!-- Active Couriers -->
-                <div class="metric-card" onclick="location.href='admin-users-v2.html'">
-                    <div class="metric-label">Active Couriers</div>
-                    <div class="metric-value" id="active-couriers">0</div>
-                    <div class="metric-subtitle">Delivery partners</div>
-                </div>
-
-                <!-- Open Disputes -->
-                <div class="metric-card critical" onclick="location.href='admin-disputes-v2.html'" id="disputes-card">
-                    <div class="metric-label">Open Disputes</div>
-                    <div class="metric-value" id="open-disputes">0</div>
-                    <div class="metric-subtitle">Require resolution</div>
-                </div>
-
-                <!-- Failed Deliveries -->
-                <div class="metric-card critical" onclick="location.href='admin-orders-v2.html'" id="failed-card">
-                    <div class="metric-label">Failed Deliveries</div>
-                    <div class="metric-value" id="failed-deliveries">0</div>
-                    <div class="metric-subtitle">Require intervention</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Super Admin Only Section -->
-        <div id="superuser-section" class="superuser-section" style="display: none;">
-            <div class="superuser-header">
+    </div>
+    <div class="shell">
+        <header class="bar">
+            <div class="brand">
+                <div class="logo">O</div>
                 <div>
-                    <h2>🔐 Administrator Management</h2>
-                    <p style="color: #666; font-size: 0.85rem; margin-top: 0.25rem;">Super Admin Only — Create and manage platform administrators</p>
+                    <h1>Optimistic Admin</h1>
+                    <p class="muted">Platform oversight and moderation</p>
                 </div>
-                <button class="btn-primary" onclick="showCreateAdminModal()">+ Create Admin User</button>
             </div>
-            
-            <div class="admin-list" id="admin-list">
-                <div class="loading" style="padding: 2rem;">Loading administrators...</div>
+            <div class="row">
+                <span class="pill" id="queue-pill">0 pending approvals</span>
+                <span class="pill" id="user-pill">0 users</span>
+                <button class="btn btn-secondary" type="button" onclick="clearSession()">Sign out</button>
             </div>
-        </div>
-    </div>
-    
-    <!-- Create Admin Modal -->
-    <div id="create-admin-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Create Admin User</h3>
-                <button class="btn-close" onclick="closeModal()">&times;</button>
-            </div>
-            <form id="create-admin-form" onsubmit="createAdminUser(event)">
-                <div class="form-group">
-                    <label>Username *</label>
-                    <input type="text" name="username" required>
+        </header>
+
+        <div class="error" id="error-banner"></div>
+
+        <section class="hero">
+            <article class="card">
+                <p class="pill" id="role-pill">System admin dashboard</p>
+                <h2 id="hero-title">Keep the marketplace healthy.</h2>
+                <p class="muted" id="hero-copy">Review sellers, products, disputes, and operational metrics from a single governance surface.</p>
+                <div class="actions">
+                    <a class="btn btn-primary" href="/admin-users-v2.html">Manage users</a>
+                    <a class="btn btn-secondary" href="/admin-reports-v2.html">Open reports</a>
                 </div>
+            </article>
 
-                <div class="form-group">
-                    <label>Email *</label>
-                    <input type="email" name="email" required>
+            <article class="card">
+                <h3>Moderation queues</h3>
+                <div class="stack" style="margin-top: 16px;" id="queue-list">
+                    <div class="empty">Loading queues...</div>
                 </div>
+            </article>
+        </section>
 
-                <div class="form-group">
-                    <label>Password *</label>
-                    <input type="password" name="password" required minlength="8">
-                </div>
+        <section class="metrics" id="metrics-grid">
+            <article class="metric"><p class="pill">Loading</p><strong>--</strong><span class="muted">Users</span></article>
+            <article class="metric"><p class="pill">Loading</p><strong>--</strong><span class="muted">Products</span></article>
+            <article class="metric"><p class="pill">Loading</p><strong>--</strong><span class="muted">Orders</span></article>
+            <article class="metric"><p class="pill">Loading</p><strong>--</strong><span class="muted">Sellers</span></article>
+            <article class="metric"><p class="pill">Loading</p><strong>--</strong><span class="muted">Pending review</span></article>
+        </section>
 
-                <div class="form-group">
-                    <label>First Name</label>
-                    <input type="text" name="first_name">
-                </div>
-
-                <div class="form-group">
-                    <label>Last Name</label>
-                    <input type="text" name="last_name">
-                </div>
-
-                <button type="submit" class="btn-primary" style="width: 100%;">Create Admin</button>
-            </form>
-        </div>
-    </div>
-
-    <script src="/static/js/api.js?v=20260129"></script>
-    <script src="/static/js/role-guard.js?v=20260129"></script>
-    <script>
-        let isSuperUser = false;
-        
-        async function loadDashboard() {
-            const loading = document.getElementById('loading');
-            const error = document.getElementById('error');
-            const metrics = document.getElementById('metrics');
-
-            try {
-                // Use role guard to check admin or super admin access
-                const hasAccess = await RoleGuard.requireAnyRole('ADMIN', 'SUPER_ADMIN');
-                if (!hasAccess) return;
-                
-                // Check if user is superuser
-                const user = JSON.parse(localStorage.getItem('user'));
-                isSuperUser = user && user.is_superuser === true;
-                
-                console.log('User is superuser:', isSuperUser);
-                
-                // Show super admin section if superuser
-                if (isSuperUser) {
-                    document.getElementById('superuser-section').style.display = 'block';
-                    loadAdminUsers();
-                }
-
-                // Fetch real admin metrics from backend
-                console.log('Fetching metrics...');
-                const metricsData = await api.getSystemMetrics();
-                console.log('Admin metrics:', metricsData);
-                
-                // Revenue metrics
-                document.getElementById('gmv-total').textContent = `K${metricsData.revenue?.total?.toLocaleString() || '0.00'}`;
-                document.getElementById('gmv-today').textContent = `K${metricsData.revenue?.month?.toLocaleString() || '0.00'}`;
-                document.getElementById('platform-revenue').textContent = `K${(metricsData.revenue?.total * 0.05)?.toLocaleString() || '0.00'}`;
-                
-                // Escrow metrics (TODO: Add to backend when escrow system is implemented)
-                document.getElementById('total-escrow').textContent = 'K0.00';
-                document.getElementById('pending-release').textContent = 'K0.00';
-                
-                // User metrics
-                document.getElementById('active-sellers').textContent = metricsData.sellers?.verified || '0';
-                document.getElementById('active-buyers').textContent = metricsData.users?.buyers || '0';
-                document.getElementById('active-couriers').textContent = '0'; // TODO: Add courier metrics
-                
-                // Critical metrics (TODO: Add disputes and failed deliveries)
-                document.getElementById('open-disputes').textContent = '0';
-                document.getElementById('failed-deliveries').textContent = '0';
-
-                // Hide cards with zero critical metrics
-                if (document.getElementById('open-disputes').textContent === '0') {
-                    document.getElementById('disputes-card').style.display = 'none';
-                }
-                if (document.getElementById('failed-deliveries').textContent === '0') {
-                    document.getElementById('failed-card').style.display = 'none';
-                }
-
-                loading.style.display = 'none';
-                metrics.style.display = 'block';
-
-            } catch (err) {
-                console.error('Dashboard load error:', err);
-                loading.style.display = 'none';
-                error.style.display = 'block';
-                error.textContent = 'Failed to load dashboard: ' + err.message;
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', loadDashboard);
-        
-        async function loadAdminUsers() {
-            const adminList = document.getElementById('admin-list');
-            try {
-                const response = await api.listUsers();
-                const adminUsers = response.users.filter(u => u.role === 'ADMIN');
-                
-                if (adminUsers.length === 0) {
-                    adminList.innerHTML = '<div style="text-align: center; color: #666; padding: 2rem;">No admin users found</div>';
-                    return;
-                }
-                
-                adminList.innerHTML = adminUsers.map(admin => `
-                    <div class="admin-item">
-                        <div class="admin-item-header">
-                            <div>
-                                <span class="admin-name">${admin.username}</span>
-                                ${admin.is_superuser ? '<span class="superuser-badge">SUPER ADMIN</span>' : ''}
-                                <div class="admin-role">${admin.email}</div>
-                            </div>
-                            <div style="color: ${admin.is_active ? '#34c759' : '#ff3b30'}; font-size: 0.85rem;">
-                                ${admin.is_active ? '● Active' : '○ Inactive'}
-                            </div>
-                        </div>
+        <section class="grid">
+            <article class="card">
+                <div class="row">
+                    <div>
+                        <h3>Pending product approvals</h3>
+                        <p class="muted">Listings waiting for a decision.</p>
                     </div>
-                `).join('');
-            } catch (err) {
-                console.error('Failed to load admin users:', err);
-                adminList.innerHTML = '<div style="text-align: center; color: #ff3b30; padding: 2rem;">Failed to load admin users</div>';
+                    <a class="pill" href="/admin-products-v2.html">Open products</a>
+                </div>
+                <div class="stack" id="approvals-list" style="margin-top: 16px;"></div>
+            </article>
+
+            <article class="card">
+                <div class="row">
+                    <div>
+                        <h3>Pending seller verifications</h3>
+                        <p class="muted">KYC packets waiting for review.</p>
+                    </div>
+                    <a class="pill" href="/admin-users-v2.html">Open users</a>
+                </div>
+                <div class="stack" id="verifications-list" style="margin-top: 16px;"></div>
+            </article>
+        </section>
+
+        <section class="card">
+            <div class="row">
+                <div>
+                    <h3>Registration trend (last 14 days)</h3>
+                    <p class="muted">Realtime user growth from platform reports.</p>
+                </div>
+            </div>
+            <svg id="admin-trend" class="chart" viewBox="0 0 640 220" preserveAspectRatio="none"></svg>
+        </section>
+    </div>
+
+    <script>
+        function getStoredToken() {
+            const candidates = ['access', 'optimisticAccessToken', 'Authorization'];
+            for (const key of candidates) {
+                const raw = localStorage.getItem(key);
+                if (!raw) continue;
+                try {
+                    const parsed = JSON.parse(raw);
+                    return typeof parsed === 'string' ? parsed : raw;
+                } catch (_) {
+                    return raw;
+                }
             }
+            return '';
         }
-        
-        function showCreateAdminModal() {
-            document.getElementById('create-admin-modal').classList.add('active');
+
+        function authHeaders() {
+            const token = getStoredToken();
+            return token ? { Authorization: `Bearer ${token}` } : {};
         }
-        
-        function closeModal() {
-            document.getElementById('create-admin-modal').classList.remove('active');
-            document.getElementById('create-admin-form').reset();
+
+        async function fetchJson(path) {
+            const response = await fetch(path, { headers: authHeaders() });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(payload.error || payload.detail || `Request failed (${response.status})`);
+            return payload;
         }
-        
-        async function createAdminUser(event) {
-            event.preventDefault();
-            
-            if (!isSuperUser) {
-                alert('Only super administrators can create admin users');
+
+        function clearSession() {
+            ['access', 'refresh', 'optimisticAccessToken', 'optimisticRefreshToken', 'optimisticUser', 'Authorization'].forEach((key) => localStorage.removeItem(key));
+            window.location.href = '/signin.html';
+        }
+
+        function setError(message) {
+            const banner = document.getElementById('error-banner');
+            banner.style.display = 'block';
+            banner.textContent = message;
+        }
+
+        function drawTrend(rows) {
+            const svg = document.getElementById('admin-trend');
+            if (!svg) return;
+            const now = new Date();
+            const dayMap = new Map();
+
+            for (let i = 13; i >= 0; i -= 1) {
+                const d = new Date(now);
+                d.setDate(now.getDate() - i);
+                dayMap.set(d.toISOString().slice(0, 10), 0);
+            }
+
+            (rows || []).forEach((entry) => {
+                const key = String(entry.date || '').slice(0, 10);
+                if (dayMap.has(key)) dayMap.set(key, dayMap.get(key) + Number(entry.count || 0));
+            });
+
+            const values = [...dayMap.values()];
+            const labels = [...dayMap.keys()].map((value) => value.slice(5));
+            const maxValue = Math.max(1, ...values);
+
+            const points = values.map((value, index) => {
+                const x = (index / (values.length - 1 || 1)) * 620 + 10;
+                const y = 200 - ((value / maxValue) * 170) + 10;
+                return `${x},${y}`;
+            }).join(' ');
+
+            const dots = values.map((value, index) => {
+                const x = (index / (values.length - 1 || 1)) * 620 + 10;
+                const y = 200 - ((value / maxValue) * 170) + 10;
+                return `<circle cx="${x}" cy="${y}" r="4" fill="#9baeff"></circle>`;
+            }).join('');
+
+            const xLabels = labels.map((label, index) => {
+                const x = (index / (labels.length - 1 || 1)) * 620 + 10;
+                return `<text x="${x}" y="214" fill="#8f9fb3" font-size="10" text-anchor="middle">${label}</text>`;
+            }).join('');
+
+            svg.innerHTML = `
+                <line x1="10" y1="200" x2="630" y2="200" stroke="rgba(255,255,255,0.12)" />
+                <polyline points="${points}" fill="none" stroke="#9baeff" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></polyline>
+                ${dots}
+                ${xLabels}
+            `;
+        }
+
+        async function loadDashboard() {
+            const token = getStoredToken();
+            if (!token) {
+                document.getElementById('hero-title').textContent = 'Sign in to access the admin control surface.';
+                document.getElementById('hero-copy').textContent = 'The governance dashboard is live, but it needs an authenticated admin session to load queues and metrics.';
+                document.getElementById('queue-list').innerHTML = '<div class="empty">Please sign in to load moderation queues.</div>';
+                document.getElementById('approvals-list').innerHTML = '<div class="empty">Please sign in to load pending products.</div>';
+                document.getElementById('verifications-list').innerHTML = '<div class="empty">Please sign in to load seller verifications.</div>';
                 return;
             }
-            
-            const form = event.target;
-            const formData = new FormData(form);
-            
-            const data = {
-                username: formData.get('username'),
-                email: formData.get('email'),
-                password: formData.get('password'),
-                first_name: formData.get('first_name'),
-                last_name: formData.get('last_name'),
-            };
-            
+
             try {
-                await api.createAdminUser(data);
-                alert('Admin user created successfully');
-                closeModal();
-                loadAdminUsers();
-            } catch (err) {
-                alert('Failed to create admin user: ' + err.message);
+                const [metrics, approvals, verifications, users, userGrowth] = await Promise.all([
+                    fetchJson('/api/admin/metrics/'),
+                    fetchJson('/api/admin/moderation/pending-approvals/'),
+                    fetchJson('/api/admin/moderation/pending-verifications/'),
+                    fetchJson('/api/admin/users/?role=SELLER'),
+                    fetchJson('/api/admin/reports/user-growth/'),
+                ]);
+
+                const userTotal = metrics.users?.total ?? 0;
+                const productTotal = metrics.products?.total ?? 0;
+                const orderTotal = metrics.orders?.total ?? 0;
+                const sellerTotal = metrics.sellers?.total ?? 0;
+                const pendingTotal = (approvals.count ?? 0) + (verifications.count ?? 0);
+
+                document.getElementById('queue-pill').textContent = `${approvals.count ?? 0} product approvals`;
+                document.getElementById('user-pill').textContent = `${userTotal} users`;
+                document.getElementById('hero-title').textContent = 'Platform health, trust, and moderation in one view.';
+                document.getElementById('hero-copy').textContent = 'Track the pulse of the marketplace, resolve moderation queues, and keep seller onboarding under control.';
+                document.getElementById('role-pill').textContent = 'System admin dashboard';
+
+                document.getElementById('metrics-grid').innerHTML = `
+                    <article class="metric"><p class="pill">Users</p><strong>${userTotal}</strong><span class="muted">Total users</span></article>
+                    <article class="metric"><p class="pill">Products</p><strong>${productTotal}</strong><span class="muted">Catalog items</span></article>
+                    <article class="metric"><p class="pill">Orders</p><strong>${orderTotal}</strong><span class="muted">Market orders</span></article>
+                    <article class="metric"><p class="pill">Sellers</p><strong>${sellerTotal}</strong><span class="muted">Seller accounts</span></article>
+                    <article class="metric"><p class="pill">Review queue</p><strong>${pendingTotal}</strong><span class="muted">Pending approvals and KYC</span></article>
+                `;
+
+                const queueList = document.getElementById('queue-list');
+                queueList.innerHTML = [
+                    `<div class="item"><div class="row"><div><h4>${approvals.count ?? 0} pending product approvals</h4><p class="muted">Listings awaiting product moderation.</p></div><span class="status warn">Queue</span></div></div>`,
+                    `<div class="item"><div class="row"><div><h4>${verifications.count ?? 0} seller verifications</h4><p class="muted">KYC submissions waiting for review.</p></div><span class="status ok">Queue</span></div></div>`,
+                    `<div class="item"><div class="row"><div><h4>${users.length || 0} sellers visible</h4><p class="muted">Useful for drill-down and account detail checks.</p></div><span class="status bad">Watch list</span></div></div>`,
+                ].join('');
+
+                document.getElementById('approvals-list').innerHTML = (approvals.products || []).length
+                    ? approvals.products.map((item) => `
+                        <div class="item">
+                            <div class="row">
+                                <div>
+                                    <h4>${item.name}</h4>
+                                    <p class="muted">${item.seller?.store_name || 'Unknown seller'} · ${item.category || 'Uncategorized'}</p>
+                                    <p class="muted">${item.price}</p>
+                                </div>
+                                <span class="status warn">Pending approval</span>
+                            </div>
+                        </div>
+                    `).join('')
+                    : '<div class="empty">No pending product approvals right now.</div>';
+
+                document.getElementById('verifications-list').innerHTML = (verifications.results || []).length
+                    ? verifications.results.map((item) => `
+                        <div class="item">
+                            <div class="row">
+                                <div>
+                                    <h4>${item.store_name}</h4>
+                                    <p class="muted">Seller ID ${item.seller_id} · ${item.id_type || 'KYC'}</p>
+                                    <p class="muted">Submitted ${item.submitted_at || 'recently'}</p>
+                                </div>
+                                <span class="status warn">${item.kyc_status || 'Pending'}</span>
+                            </div>
+                        </div>
+                    `).join('')
+                    : '<div class="empty">No pending seller verifications right now.</div>';
+
+                drawTrend(userGrowth.daily_registrations || []);
+            } catch (error) {
+                setError(error.message);
             }
         }
-        
-        // Close modal when clicking outside
-        document.getElementById('create-admin-modal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeModal();
+
+        function signOut() {
+            clearSession();
+        }
+
+        async function loadUserProfile() {
+            try {
+                const token = getStoredToken();
+                if (!token) return;
+                const response = await fetch('/api/auth/profile/', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const user = await response.json();
+                if (user && user.id) {
+                    const displayName = user.full_name || user.first_name || user.email || 'Admin';
+                    document.getElementById('user-display').textContent = `${displayName} (Admin)`;
+                }
+            } catch (err) {
+                console.error('Failed to load user profile:', err);
             }
-        });
+        }
+
+        loadDashboard();
+        loadUserProfile();
     </script>
 </body>
+
 </html>

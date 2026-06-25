@@ -1,18 +1,26 @@
 from rest_framework import serializers
 from .models import Category, Product, ProductImage
+from .category_specs import get_category_attribute_schema, normalize_and_validate_attributes
+from apps.common.mixins import ImageURLMixin, SchemaDriftMixin
+from apps.sellers.utils import get_user_seller
 
 
-class CategorySerializer(serializers.ModelSerializer):
+class CategorySerializer(SchemaDriftMixin, serializers.ModelSerializer):
     """
     Category serializer.
     """
+    attribute_schema = serializers.SerializerMethodField()
+
     class Meta:
         model = Category
-        fields = ['id', 'name', 'slug', 'is_active']
+        fields = ['id', 'name', 'slug', 'is_active', 'attribute_schema']
         read_only_fields = ['id']
 
+    def get_attribute_schema(self, obj):
+        return get_category_attribute_schema(obj)
 
-class ProductImageSerializer(serializers.ModelSerializer):
+
+class ProductImageSerializer(ImageURLMixin, serializers.ModelSerializer):
     """
     Product image serializer with full URL.
     """
@@ -22,17 +30,9 @@ class ProductImageSerializer(serializers.ModelSerializer):
         model = ProductImage
         fields = ['id', 'image', 'image_url', 'is_primary']
         read_only_fields = ['id']
-    
-    def get_image_url(self, obj):
-        if obj.image:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.image.url)
-            return obj.image.url
-        return None
 
 
-class ProductSerializer(serializers.ModelSerializer):
+class ProductSerializer(SchemaDriftMixin, serializers.ModelSerializer):
     """
     Product serializer for API responses and updates.
     
@@ -71,38 +71,61 @@ class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
     seller_name = serializers.CharField(source='seller.store_name', read_only=True)
+    attributes = serializers.JSONField(required=False)
 
     class Meta:
         model = Product
         fields = [
             'id', 'seller', 'seller_name', 'category', 'category_name',
-            'name', 'description', 'price', 'stock', 'status',
+            'name', 'description', 'price', 'stock', 'attributes', 'status',
             'images', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'seller', 'status', 'created_at', 'updated_at']
 
-    def validate_price(self, value):
-        if value < 0:
-            raise serializers.ValidationError("Price cannot be negative")
-        return value
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        category = attrs.get('category') or getattr(self.instance, 'category', None)
 
-    def validate_stock(self, value):
-        if value < 0:
-            raise serializers.ValidationError("Stock cannot be negative")
-        return value
+        if 'attributes' in attrs:
+            self.check_field_available(Product, 'attributes')
+            normalized, errors = normalize_and_validate_attributes(category, attrs.get('attributes'))
+            if errors:
+                raise serializers.ValidationError({'attributes': errors})
+            attrs['attributes'] = normalized
+
+        return attrs
+    
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        # Ensure attributes is always a dictionary even if null in DB
+        ret['attributes'] = ret.get('attributes') or {}
+        return ret
 
 
-class ProductCreateSerializer(serializers.ModelSerializer):
+class ProductCreateSerializer(SchemaDriftMixin, serializers.ModelSerializer):
     """
     Serializer for creating products (sellers only).
     """
+    attributes = serializers.JSONField(required=False, default=dict)
+
     class Meta:
         model = Product
-        fields = ['id', 'category', 'name', 'description', 'price', 'stock']
+        fields = ['id', 'category', 'name', 'description', 'price', 'stock', 'attributes']
         read_only_fields = ['id']
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        self.check_field_available(Product, 'attributes')
+        normalized, errors = normalize_and_validate_attributes(attrs.get('category'), attrs.get('attributes'))
+        if errors:
+            raise serializers.ValidationError({'attributes': errors})
+        attrs['attributes'] = normalized
+        return attrs
     
     def create(self, validated_data):
-        seller = self.context['request'].user.seller
+        seller = get_user_seller(self.context['request'].user)
+        if seller is None:
+            raise serializers.ValidationError({'seller': 'Seller profile not found for the current user.'})
         product = Product.objects.create(
             seller=seller,
             status='DRAFT',

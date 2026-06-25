@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser
 from django.utils import timezone
 from .models import Product
+from apps.common.utils import log_audit
 
 
 @api_view(['POST'])
@@ -25,8 +26,16 @@ def approve_product(request, product_id):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        product.status = 'ACTIVE'
-        product.save()
+        product.approve()
+
+        log_audit(
+            actor=request.user,
+            action='PRODUCT_APPROVE',
+            target_type='Product',
+            target_id=product.id,
+            details={'name': product.name},
+            request=request
+        )
         
         return Response({
             'message': 'Product approved successfully',
@@ -67,8 +76,16 @@ def suspend_product(request, product_id):
         
         reason = request.data.get('reason', 'Policy violation')
         
-        product.status = 'SUSPENDED'
-        product.save()
+        product.suspend(reason=reason)
+
+        log_audit(
+            actor=request.user,
+            action='PRODUCT_REMOVE',
+            target_type='Product',
+            target_id=product.id,
+            details={'name': product.name, 'reason': reason},
+            request=request
+        )
         
         # TODO: Store suspension reason in a ProductModerationLog model
         

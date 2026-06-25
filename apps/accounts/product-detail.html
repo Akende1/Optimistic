@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Details — Optimistic</title>
+    <link rel="stylesheet" href="/static/css/modern.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .product-gallery {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .main-image-container {
+            aspect-ratio: 1 / 1;
+            background: white;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            border: 1px solid #E2E8F0;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .main-image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+        }
+        .thumbnail-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.75rem;
+        }
+        .thumbnail {
+            aspect-ratio: 1 / 1;
+            border-radius: 0.75rem;
+            border: 2px solid transparent;
+            cursor: pointer;
+            overflow: hidden;
+            background: white;
+            transition: all 0.2s ease;
+        }
+        .thumbnail.active {
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 0 2px var(--accent-lavender);
+        }
+        .thumbnail:hover {
+            transform: translateY(-2px);
+        }
+        .product-info-card {
+            padding: 2rem;
+            background: white;
+            border-radius: 1.5rem;
+            border: 1px solid #E2E8F0;
+        }
+        .price-tag {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary-purple);
+            letter-spacing: -0.025em;
+        }
+        .badge-trust {
+            background: #F5F3FF;
+            color: var(--primary-purple);
+            border: 1px solid var(--accent-lavender);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <nav class="navbar-modern">
+        <div class="container nav-container flex justify-between items-center">
+            <!-- Populated by navigation.js -->
+        </div>
+    </nav>
+
+    <main class="container py-12">
+        <nav class="flex mb-8 text-sm text-slate-500" aria-label="Breadcrumb">
+            <ol class="flex list-none p-0">
+                <li><a href="/" class="hover:text-purple-600">Home</a></li>
+                <li class="px-2">/</li>
+                <li><a href="/products" class="hover:text-purple-600">Electronics</a></li>
+                <li class="px-2">/</li>
+                <li class="text-slate-900 font-medium">Smartphone X1</li>
+            </ol>
+        </nav>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <!-- Left: Gallery -->
+            <div class="product-gallery">
+                <div class="main-image-container">
+                    <img id="main-product-image" src="/static/images/placeholder-lg.png" alt="Product Image">
+                </div>
+                <div class="thumbnail-grid" id="thumb-grid">
+                    <!-- Thumbnails injected here -->
+                </div>
+            </div>
+
+            <!-- Right: Content -->
+            <div class="flex flex-col gap-6">
+                <div class="product-info-card">
+                    <div class="mb-4">
+                        <span class="badge-trust">
+                            🛡️ Escrow Protected
+                        </span>
+                    </div>
+                    <h1 class="text-4xl font-extrabold text-slate-900 mb-2" id="product-title">Premium Wireless Headphones</h1>
+                    <p class="text-slate-500 mb-6">Sold by <a href="#" class="text-purple-600 font-semibold hover:underline" id="seller-name">Optimistic Tech</a></p>
+                    
+                    <div class="price-tag mb-8" id="product-price">ZMW 2,450.00</div>
+                    
+                    <div class="space-y-4">
+                        <button class="btn-purple w-full text-lg py-4 flex justify-center items-center gap-2">
+                            <span>🛒 Add to Cart</span>
+                        </button>
+                        <button class="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 transition-colors">
+                            Buy Now
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card-modern p-8">
+                    <h3 class="text-xl font-bold mb-4">Product Description</h3>
+                    <div class="text-slate-600 leading-relaxed space-y-4" id="product-desc">
+                        <p>Experience studio-quality sound with the new Optimistic Wireless series. Features include active noise cancellation, 40-hour battery life, and premium lavender finish.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/navigation.js"></script>
+    <script>
+        function switchImage(src, thumbElement) {
+            document.getElementById('main-product-image').src = src;
+            document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
+            thumbElement.classList.add('active');
+        }
+
+        // Future: Initialize with API data
+    </script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+/* Optimistic Modern Design System */
+:root {
+    --primary-purple: #7C3AED;
+    --accent-lavender: #A78BFA;
+    --bg-deep: #0F172A;
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --card-shadow: 0 10px 25px -5px rgba(124, 58, 237, 0.1);
+}
+
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: #F8FAFC;
+    color: #1E293B;
+}
+
+.navbar-modern {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--glass-border);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    padding: 0.75rem 0;
+}
+
+.card-modern {
+    background: white;
+    border-radius: 1.5rem;
+    border: 1px solid #E2E8F0;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
+}
+
+.card-modern:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 35px -10px rgba(124, 58, 237, 0.15);
+}
+
+.btn-purple {
+    background: linear-gradient(135deg, var(--primary-purple), #6D28D9);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.3);
+    border: none;
+    cursor: pointer;
+}

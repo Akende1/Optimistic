@@ -502,6 +502,55 @@ For technical issues or questions:
 
 **Built with ❤️ for Zambia** 🇿🇲
 
-**Last Updated**: February 27, 2026  
-**Version**: 1.0.0  
-**Status**: Production Ready (Pending KYC Migration)
+## 🎨 Design System
+
+The project's canonical design system is captured in `DESIGN.md` at the repository root. It contains fully-structured YAML design tokens (colors, typography, spacing, radii, shadows, motion) and a concise narrative of the visual language. Use `DESIGN.md` as the single source of truth when updating styles, creating components, or consolidating CSS files.
+
+Quick links:
+
+- `DESIGN.md` — tokens, usage guidance, and component patterns
+
+## 🧹 Recommended Cleanup (safe, manual steps)
+
+The codebase currently includes legacy pages and styles alongside newer `-v2` assets. Before removing files, review them in a branch and verify the newer equivalents render correctly.
+
+Suggested workflow:
+
+1. Create a cleanup branch:
+
+```bash
+git checkout -b cleanup/remove-legacy-files
+```
+
+2. Inspect legacy files (examples):
+
+```bash
+git ls-files frontend/*.html | grep -E "-(v2|v3)" -v
+git ls-files frontend/style/*.css | xargs -n1 basename
+```
+
+3. Remove confirmed legacy files with `git rm` and commit:
+
+```bash
+git rm frontend/debug-user.html frontend/system-test.html
+git rm frontend/style/modern.css  # example — verify first
+git commit -m "chore: remove legacy frontend files after UX review"
+```
+
+4. Run tests and start the dev server to validate:
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate  # Windows
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
+
+5. When satisfied, open a PR describing the removals and linking to `DESIGN.md`.
+
+---
+
+**Last Updated**: April 28, 2026  
+**Version**: 1.0.1  
+**Status**: Active development

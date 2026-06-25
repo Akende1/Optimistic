@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimistic Sign In</title>
+    <link rel="stylesheet" href="./style/signin.css">
+    <link rel="stylesheet" href="./style/footer.css">
+</head>
+
+<body>
+    <div id="logo">
+        <a href="./index.html"><div style="font:700 28px/1 Inter,system-ui,sans-serif;color:#f76c5e;letter-spacing:.06em;">OPTIMISTIC</div></a>
+    </div>
+
+    <div id="screen-banner">
+        <div id="signinform">
+            <label for="">Account:</label>
+            <input type="text" placeholder="Email address or member ID" id="signin-mail">
+
+            <div>
+                <label for="">Password:</label>
+                <a href="">Forgot Password?</a>
+            </div>
+
+            <input type="password" placeholder="Password" id="signin-password">
+
+            <span>
+                <input type="checkbox">
+                <label for="">Stay signed in</label>
+            </span>
+            <button onclick="signin()">Sign in</button>
+            <div>
+                <a href="">Mobile number sign in</a>
+                <a href="./signUp.html">Join Free</a>
+            </div>
+
+            <hr>
+
+            <div id="login-link">
+                <p>Sign in with:</p>
+                <span class="pill">Sign in with Optimistic</span>
+                <span class="pill">Google</span>
+                <span class="pill">LinkedIn</span>
+                <span class="pill">Twitter</span>
+            </div>
+        </div>
+    </div>
+
+    <section id="footersection">
+
+    </section>
+</body>
+
+</html>
+
+<script type="module">
+    import footer from "./components/optimisticFooter.js";
+
+    document.querySelector("#footersection").innerHTML = footer();
+</script>
+
+    <script>
+        function resolveRedirect(res) {
+            if (res && res.redirect) return res.redirect;
+            return './index.html';
+        }
+
+        async function signin() {
+            try {
+                const identifier = document.querySelector('#signin-mail').value.trim();
+                const password = document.querySelector('#signin-password').value;
+
+                const response = await fetch('/api/auth/login/', {
+                    method: 'POST',
+                    body: JSON.stringify({ identifier, password }),
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                const res = await response.json();
+
+                if (!response.ok) {
+                    alert(res.error || res.detail || 'Unable to sign in');
+                    return;
+                }
+
+                if (res.access) {
+                    localStorage.setItem('access', res.access);
+                    localStorage.setItem('Authorization', res.access);
+                }
+                if (res.refresh) {
+                    localStorage.setItem('refresh', res.refresh);
+                }
+                if (res.user) {
+                    localStorage.setItem('optimisticUser', JSON.stringify(res.user));
+                }
+
+                window.location.href = resolveRedirect(res);
+            } catch (error) {
+                alert(error.message || 'Unable to sign in');
+            }
+        }
+    </script>

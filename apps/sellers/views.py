@@ -1,12 +1,16 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db.models import Count, Sum, Q
+from django.db import transaction
+from rest_framework.decorators import api_view, permission_classes, parser_classes
 from .models import Seller
 from .serializers import SellerSerializer, SellerCreateSerializer, SellerUpdateSerializer
-from apps.common.permissions import IsSeller
+from .serializers import SellerVerificationSerializer, SellerVerificationReviewSerializer
+from apps.common.api import get_user_seller, model_field_available
+from apps.common.permissions import IsSeller, IsVerifiedAccount
 
 
 class SellerViewSet(viewsets.ModelViewSet):
@@ -20,6 +24,12 @@ class SellerViewSet(viewsets.ModelViewSet):
     """
     queryset = Seller.objects.filter(verified=True)
     serializer_class = SellerSerializer
+
+    def get_queryset(self):
+        queryset = Seller.objects.filter(verified=True)
+        if not model_field_available(Seller, 'primary_location'):
+            return queryset.defer('primary_location')
+        return queryset
     
     def get_permissions(self):
         if self.action == 'create':
@@ -33,7 +43,8 @@ class SellerViewSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         """Create seller profile for current user."""
-        if hasattr(request.user, 'seller'):
+        existing_seller = get_user_seller(request.user)
+        if existing_seller is not None:
             return Response(
                 {'error': 'Seller profile already exists'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -68,33 +79,33 @@ class SellerViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def me(self, request):
         """Get current user's seller profile."""
-        if not hasattr(request.user, 'seller'):
+        seller = get_user_seller(request.user)
+        if seller is None:
             return Response(
                 {'error': 'Seller profile not found'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
-        seller = request.user.seller
+
         serializer = SellerSerializer(seller, context={'request': request})
         return Response(serializer.data)
     
     @action(detail=False, methods=['patch'], parser_classes=[MultiPartParser, FormParser])
     def update_profile(self, request):
         """Update seller profile including images (authenticated seller only)."""
-        if not hasattr(request.user, 'seller'):
+        seller = get_user_seller(request.user)
+        if seller is None:
             return Response(
                 {'error': 'Seller profile not found'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
-        seller = request.user.seller
+
         serializer = SellerUpdateSerializer(seller, data=request.data, partial=True, context={'request': request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
         
         return Response(SellerSerializer(seller, context={'request': request}).data)
     
-    @action(detail=False, methods=['get'], permission_classes=[IsSeller])
+    @action(detail=False, methods=['get'], permission_classes=[IsSeller, IsVerifiedAccount])
     def orders(self, request):
         """
         Get orders containing current seller's products.
@@ -107,21 +118,22 @@ class SellerViewSet(viewsets.ModelViewSet):
         from apps.orders.models import Order
         from apps.orders.serializers import OrderSerializer
         
-        if not hasattr(request.user, 'seller'):
+        seller = get_user_seller(request.user)
+        if seller is None:
             return Response(
                 {'error': 'Seller profile not found'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
+
         # Get orders containing this seller's items
         orders = Order.objects.filter(
-            items__seller=request.user.seller
+            items__seller=seller
         ).distinct().order_by('-created_at')
         
         serializer = OrderSerializer(orders, many=True, context={'request': request})
         return Response(serializer.data)
     
-    @action(detail=False, methods=['get'], permission_classes=[IsSeller])
+    @action(detail=False, methods=['get'], permission_classes=[IsSeller, IsVerifiedAccount])
     def analytics(self, request):
         """
         Get seller-specific analytics and metrics.
@@ -138,13 +150,12 @@ class SellerViewSet(viewsets.ModelViewSet):
         from apps.products.models import Product
         from apps.orders.models import Order, OrderItem
         
-        if not hasattr(request.user, 'seller'):
+        seller = get_user_seller(request.user)
+        if seller is None:
             return Response(
                 {'error': 'Seller profile not found'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
-        seller = request.user.seller
         
         # Product metrics - ONLY this seller's products
         products = Product.objects.filter(seller=seller)
@@ -186,3 +197,53 @@ class SellerViewSet(viewsets.ModelViewSet):
         }
         
         return Response(analytics)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsSeller])
+def seller_verification_status(request):
+    """Get the current seller KYC status and documents."""
+    seller = get_user_seller(request.user)
+    if seller is None:
+        return Response({'error': 'Seller profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    verification = getattr(seller, 'kyc_documents', None)
+    verification_data = SellerVerificationSerializer(verification, context={'request': request}).data if verification else None
+
+    return Response({
+        'seller': SellerSerializer(seller, context={'request': request}).data,
+        'can_publish_products': seller.can_publish_products(),
+        'verification': verification_data,
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, IsSeller, IsVerifiedAccount])
+@parser_classes([MultiPartParser, FormParser])
+@transaction.atomic
+def submit_seller_verification(request):
+    """Create or update the seller KYC packet and submit it for review."""
+    seller = get_user_seller(request.user)
+    if seller is None:
+        return Response({'error': 'Seller profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if seller.verified and seller.verification_status == 'VERIFIED':
+        return Response({'error': 'Seller is already verified.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    verification = getattr(seller, 'kyc_documents', None)
+    serializer = SellerVerificationSerializer(
+        instance=verification,
+        data=request.data,
+        context={'request': request, 'seller': seller},
+    )
+    serializer.is_valid(raise_exception=True)
+    verification = serializer.save()
+
+    return Response(
+        {
+            'message': 'KYC documents submitted for review.',
+            'seller': SellerSerializer(seller, context={'request': request}).data,
+            'verification': SellerVerificationSerializer(verification, context={'request': request}).data,
+        },
+        status=status.HTTP_201_CREATED if verification.status == 'PENDING' else status.HTTP_200_OK,
+    )

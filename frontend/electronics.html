@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimistic | Electronics</title>
+    <link rel="stylesheet" href="./style/storefront-2026.css">
+</head>
+<body>
+    <div class="sf-shell">
+        <section class="sf-card sf-hero-main" style="margin-top:18px; text-align:center;">
+            <span class="sf-kicker">Category routing</span>
+            <h1>Taking you to Electronics</h1>
+            <p class="sf-muted">This legacy route now uses the unified realtime catalog page.</p>
+            <div class="sf-actions" style="justify-content:center;">
+                <a class="sf-btn primary" href="./products.html?category_slug=electronics">Open electronics catalog</a>
+                <a class="sf-btn" href="./products.html">Open all products</a>
+            </div>
+        </section>
+    </div>
+    <script>
+        window.location.replace('./products.html?category_slug=electronics');
+    </script>
+</body>
+</html>

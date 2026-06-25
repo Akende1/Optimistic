@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAdminUser
 from rest_framework.parsers import MultiPartParser, FormParser
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db import models
+from django.db.models import Prefetch, Q, Case, When, Value, IntegerField, Count, Min, Max
 from .models import Category, Product, ProductImage
 from .serializers import (
     CategorySerializer, 
@@ -12,6 +12,7 @@ from .serializers import (
     ProductCreateSerializer,
     ProductImageUploadSerializer
 )
+from apps.common.api import get_user_seller, model_field_available
 from apps.common.permissions import IsVerifiedSeller, IsOwnerOrReadOnly
 
 
@@ -22,7 +23,7 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     GET /api/categories/ - List all active categories
     GET /api/categories/{id}/ - Get category details
     """
-    queryset = Category.objects.filter(is_active=True)
+    queryset = Category.objects.filter(is_active=True).only('id', 'name', 'slug', 'is_active')
     serializer_class = CategorySerializer
     permission_classes = []
 
@@ -89,19 +90,64 @@ class ProductViewSet(viewsets.ModelViewSet):
         - No select_related here because we use serializer optimization
         - Queryset is lean, let serializer handle prefetching
         """
-        queryset = Product.objects.all()
-        
+        image_prefetch = Prefetch(
+            'images',
+            queryset=ProductImage.objects.only('id', 'image', 'is_primary', 'product_id').order_by('-is_primary', 'id')
+        )
+        queryset = Product.objects.select_related('seller', 'category').prefetch_related(image_prefetch)
+        if not model_field_available(Product, 'attributes'):
+            queryset = queryset.defer('attributes')
+
         # Admin sees all products (for moderation)
         if self.request.user.is_authenticated and self.request.user.is_staff:
-            return queryset
+            base_queryset = queryset
         
         # Sellers: ONLY their own products (any status) - NO OTHER PRODUCTS
         # They use the seller dashboard, not buyer marketplace
-        if self.request.user.is_authenticated and self.request.user.role == 'SELLER' and hasattr(self.request.user, 'seller'):
-            return queryset.filter(seller=self.request.user.seller)
+        elif self.request.user.is_authenticated and self.request.user.role == 'SELLER':
+            seller = get_user_seller(self.request.user)
+            if seller is None:
+                base_queryset = queryset.none()
+            else:
+                base_queryset = queryset.filter(seller=seller)
+        else:
+            # Unauthenticated users and Buyers: Only ACTIVE products (public marketplace)
+            base_queryset = queryset.filter(status='ACTIVE')
+
+        # Enhanced discovery filters for marketplace browsing.
+        queryset = base_queryset
+        min_price = self.request.query_params.get('min_price')
+        max_price = self.request.query_params.get('max_price')
+        in_stock = self.request.query_params.get('in_stock')
+        category_slug = self.request.query_params.get('category_slug')
+        q = self.request.query_params.get('q')
+
+        if min_price:
+            queryset = queryset.filter(price__gte=min_price)
+        if max_price:
+            queryset = queryset.filter(price__lte=max_price)
+        if in_stock and in_stock.lower() in ['1', 'true', 'yes']:
+            queryset = queryset.filter(stock__gt=0)
+        if category_slug:
+            queryset = queryset.filter(category__slug=category_slug)
+
+        if q:
+            queryset = queryset.filter(
+                Q(name__icontains=q)
+                | Q(description__icontains=q)
+                | Q(category__name__icontains=q)
+                | Q(seller__store_name__icontains=q)
+            ).annotate(
+                relevance_score=Case(
+                    When(name__iexact=q, then=Value(100)),
+                    When(name__istartswith=q, then=Value(70)),
+                    When(description__icontains=q, then=Value(30)),
+                    default=Value(10),
+                    output_field=IntegerField(),
+                )
+            ).order_by('-relevance_score', '-created_at')
         
-        # Unauthenticated users and Buyers: Only ACTIVE products (public marketplace)
-        return queryset.filter(status='ACTIVE')
+        return queryset
     
     def get_serializer_class(self):
         if self.action == 'create':
@@ -308,3 +354,36 @@ class ProductViewSet(viewsets.ModelViewSet):
                 {'error': 'Image not found'},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+    @action(detail=False, methods=['get'])
+    def facets(self, request):
+        """Return discovery facets for search UI (categories, stock, price range)."""
+        queryset = self.get_queryset()
+
+        category_buckets = queryset.values(
+            'category_id', 'category__name', 'category__slug'
+        ).annotate(count=Count('id')).order_by('-count', 'category__name')
+
+        price_stats = queryset.aggregate(min_price=Min('price'), max_price=Max('price'))
+
+        return Response(
+            {
+                'categories': [
+                    {
+                        'id': bucket['category_id'],
+                        'name': bucket['category__name'] or 'Uncategorized',
+                        'slug': bucket['category__slug'],
+                        'count': bucket['count'],
+                    }
+                    for bucket in category_buckets
+                ],
+                'stock': {
+                    'in_stock': queryset.filter(stock__gt=0).count(),
+                    'out_of_stock': queryset.filter(stock=0).count(),
+                },
+                'price_range': {
+                    'min': price_stats['min_price'],
+                    'max': price_stats['max_price'],
+                },
+            }
+        )

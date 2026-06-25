@@ -3,244 +3,490 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Optimistic — Zambia's Premier Online Marketplace</title>
-    <link rel="stylesheet" href="/static/css/base.css">
-    <link rel="stylesheet" href="/static/css/layout.css">
-    <link rel="stylesheet" href="/static/css/components.css">
-    <link rel="stylesheet" href="/static/css/mobile.css">
-    <link rel="stylesheet" href="/static/css/responsive.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>Optimistic | Global Marketplace</title>
+    <link rel="stylesheet" href="./style/storefront-2026.css">
+    <style>
+        .alibaba-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: rgba(6, 10, 18, 0.88);
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .alibaba-topbar-brand {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            color: var(--accent);
+        }
+
+        .alibaba-topbar-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .alibaba-topbar-actions a {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .alibaba-topbar-actions .primary {
+            background: var(--accent);
+            color: var(--bg);
+            font-weight: 600;
+        }
+
+        .alibaba-main {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .alibaba-sidebar {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            height: fit-content;
+            position: sticky;
+            top: 80px;
+        }
+
+        .alibaba-sidebar h3 {
+            margin: 0 0 16px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            text-transform: uppercase;
+        }
+
+        .alibaba-sidebar-item {
+            display: block;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--text);
+            transition: all 0.2s ease;
+            margin-bottom: 4px;
+        }
+
+        .alibaba-sidebar-item:hover {
+            background: rgba(139, 149, 255, 0.1);
+            color: var(--accent);
+        }
+
+        .alibaba-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .alibaba-hero {
+            background: linear-gradient(135deg, rgba(139, 149, 255, 0.08) 0%, rgba(90, 168, 255, 0.08) 100%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .alibaba-hero h1 {
+            margin: 0 0 8px 0;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .alibaba-hero p {
+            margin: 0 0 16px 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .alibaba-search-box {
+            display: flex;
+            gap: 8px;
+        }
+
+        .alibaba-search-box input {
+            flex: 1;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .alibaba-search-box button {
+            padding: 12px 24px;
+            background: var(--accent);
+            color: var(--bg);
+            border: 0;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .alibaba-search-box button:hover {
+            opacity: 0.9;
+        }
+
+        .alibaba-section {
+            margin-bottom: 0;
+        }
+
+        .alibaba-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .alibaba-section-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text);
+        }
+
+        .alibaba-view-more {
+            color: var(--accent);
+            font-size: 13px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .alibaba-view-more:hover {
+            opacity: 0.8;
+        }
+
+        .alibaba-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 16px;
+        }
+
+        .alibaba-product {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .alibaba-product:hover {
+            border-color: var(--accent);
+            box-shadow: 0 8px 24px rgba(139, 149, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .alibaba-product-image {
+            width: 100%;
+            height: 140px;
+            background: rgba(255, 255, 255, 0.04);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .alibaba-product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .alibaba-product-body {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .alibaba-product-title {
+            font-size: 12px;
+            color: var(--text);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .alibaba-product-price {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .alibaba-product-meta {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .alibaba-empty {
+            padding: 40px;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        .alibaba-loading {
+            padding: 40px;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        @media (max-width: 768px) {
+            .alibaba-main {
+                grid-template-columns: 1fr;
+            }
+
+            .alibaba-sidebar {
+                display: none;
+            }
+
+            .alibaba-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            }
+
+            .alibaba-hero h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <!-- Navigation (auto-populated by navigation.js) -->
-    <nav class="navbar">
-        <div class="container nav-container">
-            <a href="index.html" class="nav-logo">Optimistic</a>
-            <ul class="nav-links">
-                <!-- Navigation items will be dynamically loaded -->
-                <li><a href="index.html">🏠 Home</a></li>
-                <li><a href="products.html">🛍️ Products</a></li>
-            </ul>
+    <!-- Top Auth Bar -->
+    <div class="alibaba-topbar">
+        <div class="alibaba-topbar-brand">OPTIMISTIC</div>
+        <div class="alibaba-topbar-actions" id="auth-area">
+            <a href="./products.html" class="alibaba-topbar-actions" style="color: var(--text); padding: 8px 12px;">Browse</a>
+            <a href="./signin.html" class="alibaba-topbar-actions" style="color: var(--text); padding: 8px 12px;">Sign in</a>
+            <a href="./signUp.html" class="alibaba-topbar-actions primary">Create account</a>
         </div>
-    </nav>
+    </div>
 
-    <!-- Hero Section -->
-    <section class="hero text-center py-12 mobile:py-8">
-        <div class="container px-6 mobile:px-4">
-            <h1 class="text-4xl md:text-5xl font-extrabold mb-4 mobile:text-3xl">🇿🇲 Welcome to Optimistic</h1>
-            <p class="text-xl md:text-2xl font-semibold mb-3 mobile:text-lg">Zambia's Premier Online Marketplace</p>
-            <p class="text-base md:text-lg opacity-90 max-w-3xl mx-auto mobile:text-sm">Discover quality products from trusted sellers across Zambia. Shop electronics, fashion, home goods, and more — all in one place.</p>
-        </div>
-    </section>
+    <!-- Main Layout -->
+    <div style="display: grid; grid-template-columns: 220px 1fr; gap: 20px; max-width: 1400px; margin: 0 auto; padding: 0 20px;">
+        <!-- Sidebar Categories -->
+        <aside class="alibaba-sidebar">
+            <h3>Categories</h3>
+            <div id="sidebar-categories"></div>
+        </aside>
 
-    <!-- Categories -->
-    <section class="section py-8 mobile:py-6">
-        <div class="container px-6 mobile:px-4">
-            <h2 class="section-title text-3xl md:text-4xl font-bold mb-6 mobile:text-2xl mobile:mb-4">Shop by Category</h2>
-            <div class="categories flex flex-wrap gap-3 mobile:gap-2" id="categories">
-                <div class="spinner"></div>
+        <!-- Main Content -->
+        <main class="alibaba-content">
+            <!-- Hero & Search -->
+            <div class="alibaba-hero">
+                <h1>Welcome to Optimistic</h1>
+                <p>Global B2B and B2C marketplace connecting buyers, sellers, and shoppers worldwide.</p>
+                <form class="alibaba-search-box" id="hero-search">
+                    <input type="search" id="hero-query" placeholder="Search products, suppliers...">
+                    <button type="submit">Search</button>
+                </form>
             </div>
-        </div>
-    </section>
 
-    <!-- Featured Products -->
-    <section class="section py-8 mobile:py-6">
-        <div class="container px-6 mobile:px-4">
-            <h2 class="section-title text-3xl md:text-4xl font-bold mb-6 mobile:text-2xl mobile:mb-4">Featured Products</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mobile:gap-4 product-grid" id="products">
-                <div class="spinner"></div>
-            </div>
-        </div>
-    </section>
+            <!-- New Arrivals Section -->
+            <section class="alibaba-section">
+                <div class="alibaba-section-header">
+                    <h2 class="alibaba-section-title">New Arrivals</h2>
+                    <a class="alibaba-view-more" href="./products.html?sort=-created_at">View more</a>
+                </div>
+                <div id="new-arrivals-grid" class="alibaba-grid"></div>
+            </section>
 
-    <!-- Footer -->
-    <footer class="footer py-12 mobile:py-8">
-        <div class="container px-6 mobile:px-4">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mobile:gap-6 mb-8 text-left">
-                <div>
-                    <h3 class="text-xl font-bold mb-4 mobile:text-lg mobile:mb-3">Optimistic</h3>
-                    <p class="opacity-80">Zambia's Premier Online Marketplace</p>
+            <!-- Hot Trends Section -->
+            <section class="alibaba-section">
+                <div class="alibaba-section-header">
+                    <h2 class="alibaba-section-title">Hot Trends</h2>
+                    <a class="alibaba-view-more" href="./products.html?sort=-rating">View more</a>
                 </div>
-                <div>
-                    <h4 class="font-semibold mb-4 mobile:mb-3">Shop</h4>
-                    <ul class="space-y-2">
-                        <li><a href="products.html" class="text-white opacity-80 hover:opacity-100">Browse Products</a></li>
-                        <li><a href="cart.html" class="text-white opacity-80 hover:opacity-100">Shopping Cart</a></li>
-                        <li><a href="orders.html" class="text-white opacity-80 hover:opacity-100">My Orders</a></li>
-                    </ul>
+                <div id="hot-trends-grid" class="alibaba-grid"></div>
+            </section>
+
+            <!-- Top Deals Section -->
+            <section class="alibaba-section">
+                <div class="alibaba-section-header">
+                    <h2 class="alibaba-section-title">Top Deals</h2>
+                    <a class="alibaba-view-more" href="./products.html">View more</a>
                 </div>
-                <div>
-                    <h4 class="font-semibold mb-4 mobile:mb-3">Sell</h4>
-                    <ul class="space-y-2">
-                        <li><a href="seller-dashboard.html" class="text-white opacity-80 hover:opacity-100">Seller Dashboard</a></li>
-                        <li><a href="add-product.html" class="text-white opacity-80 hover:opacity-100">Add Product</a></li>
-                        <li><a href="register.html" class="text-white opacity-80 hover:opacity-100">Become a Seller</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 class="font-semibold mb-4 mobile:mb-3">Company</h4>
-                    <ul class="space-y-2">
-                        <li><a href="about.html" class="text-white opacity-80 hover:opacity-100">About Us</a></li>
-                        <li><a href="contact.html" class="text-white opacity-80 hover:opacity-100">Contact</a></li>
-                        <li><a href="profile.html" class="text-white opacity-80 hover:opacity-100">My Account</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="border-t border-white/10 pt-6 text-center">
-                <p class="opacity-90">© 2026 Optimistic · Proudly Built for Zambia 🇿🇲</p>
-            </div>
-        </div>
+                <div id="top-deals-grid" class="alibaba-grid"></div>
+            </section>
+        </main>
+    </div>
+
+    <footer class="additional" style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.08);">
+        <p>Shop for everyday goods, discover trusted suppliers, or open a storefront on Optimistic.</p>
+        <p>Buyer Hub | Seller Center | Logistics | Support | Privacy Policy | Terms of Use</p>
+        <p>For consumers and businesses across Zambia and beyond.</p>
+        <p><span>© 2026 Optimistic.</span> All rights reserved</p>
     </footer>
 
-    <script src="/static/js/api.js"></script>
-    <script src="/static/js/realtime.js"></script>
     <script>
-        // Load categories
-        async function loadCategories() {
+        const homeState = {
+            allProducts: [],
+            categories: [],
+            user: null,
+            token: null
+        };
+
+        // Utility: Format currency
+        function money(value) {
+            const n = Number(value || 0);
+            return `ZMW ${n.toFixed(2)}`;
+        }
+
+        // Utility: Get image from product
+        function getImage(product) {
+            return product?.images?.find((item) => item?.image_url)?.image_url || product?.images?.[0]?.image_url || '';
+        }
+
+        // Utility: Fetch JSON
+        async function fetchJson(path, options = {}) {
             try {
-                const data = await api.getCategories();
-                const container = document.getElementById('categories');
-                
-                if (data.results && data.results.length > 0) {
-                    container.innerHTML = data.results.map(cat => `
-                        <a href="products.html?category=${cat.id}" class="category-pill">
-                            ${cat.name}
-                        </a>
-                    `).join('');
-                } else {
-                    container.innerHTML = '<p>No categories available</p>';
+                const response = await fetch(path, options);
+                if (!response.ok) {
+                    const payload = await response.json().catch(() => ({}));
+                    throw new Error(payload.detail || `Request failed (${response.status})`);
                 }
+                return await response.json();
             } catch (error) {
-                console.error('Error loading categories:', error);
-                document.getElementById('categories').innerHTML = 
-                    '<p class="alert-error">Failed to load categories</p>';
+                console.error('Fetch error:', error);
+                return null;
             }
         }
 
-        // Load featured products
-        async function loadProducts() {
-            try {
-                const data = await api.getProducts({ status: 'ACTIVE' });
-                const container = document.getElementById('products');
-                
-                if (data.results && data.results.length > 0) {
-                    container.innerHTML = data.results.slice(0, 8).map(product => `
-                        <div class="product-card">
-                            <div class="product-image">
-                                <span>📦 ${product.category_name || 'Product'}</span>
-                            </div>
-                            <div class="product-info">
-                                <h3 class="product-name">${product.name}</h3>
-                                <div class="product-price">K${product.price}</div>
-                                <div class="product-seller">by ${product.seller_name}</div>
-                                <div class="product-stock">
-                                    ${product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
-                                </div>
-                                <a href="product-detail.html?id=${product.id}" class="btn btn-primary mt-2" style="display:block; text-align:center;">
-                                    View Details
-                                </a>
-                            </div>
+        // Check auth on load
+        function checkAuth() {
+            const raw = localStorage.getItem('Authorization');
+            if (raw) {
+                try {
+                    homeState.token = JSON.parse(raw);
+                } catch (_) {
+                    homeState.token = raw;
+                }
+                // Fetch user profile
+                fetchUserProfile();
+            }
+        }
+
+        async function fetchUserProfile() {
+            if (!homeState.token) return;
+            const user = await fetchJson('/api/auth/profile/', {
+                headers: { Authorization: `Bearer ${homeState.token}` }
+            });
+            if (user && user.id) {
+                homeState.user = user;
+                updateAuthArea();
+            }
+        }
+
+        function updateAuthArea() {
+            const area = document.getElementById('auth-area');
+            if (homeState.user) {
+                const displayName = homeState.user.full_name || homeState.user.first_name || homeState.user.email || 'User';
+                area.innerHTML = `
+                    <span style="color: var(--muted); font-size: 13px;">Welcome, <strong>${displayName}</strong></span>
+                    <a href="./buyer-dashboard.html" style="color: var(--text); padding: 8px 12px; text-decoration: underline;">My Orders</a>
+                    <button onclick="signOut()" class="alibaba-topbar-actions primary" style="border: 0; padding: 8px 16px; cursor: pointer;">Sign out</button>
+                `;
+            }
+        }
+
+        function signOut() {
+            localStorage.removeItem('Authorization');
+            localStorage.removeItem('optimisticCart');
+            localStorage.removeItem('legacyCart');
+            window.location.href = './index.html';
+        }
+
+        // Render sidebar categories
+        function renderCategories() {
+            const container = document.getElementById('sidebar-categories');
+            const cats = Array.isArray(homeState.categories) ? homeState.categories : (homeState.categories && homeState.categories.results) ? homeState.categories.results : [];
+            if (!cats.length) {
+                container.innerHTML = '<div class="alibaba-empty" style="padding: 20px 0; font-size: 12px;">Loading categories...</div>';
+                return;
+            }
+
+            container.innerHTML = cats.map((cat) => `
+                <a class="alibaba-sidebar-item" href="./products.html?category_slug=${encodeURIComponent(cat.slug)}">
+                    ${cat.name}
+                </a>
+            `).join('');
+        }
+
+        // Render product grid
+        function renderGrid(gridId, products) {
+            const container = document.getElementById(gridId);
+            if (!products || !products.length) {
+                container.innerHTML = '<div class="alibaba-loading">Loading products...</div>';
+                return;
+            }
+
+            container.innerHTML = products.slice(0, 8).map((product) => {
+                const image = getImage(product);
+                return `
+                    <div class="alibaba-product" onclick="window.location.href='./product-detail.html?id=${encodeURIComponent(product.id)}'">
+                        <div class="alibaba-product-image">
+                            ${image ? `<img src="${image}" alt="${(product.name || 'Product').replace(/"/g, '&quot;')}">` : '<div style="color: var(--muted); font-size: 12px;">No image</div>'}
                         </div>
-                    `).join('');
-                } else {
-                    container.innerHTML = `
-                        <div class="empty-state" style="grid-column: 1/-1;">
-                            <h3>No products yet</h3>
-                            <p>Check back soon!</p>
+                        <div class="alibaba-product-body">
+                            <div class="alibaba-product-title">${product.name || 'Untitled'}</div>
+                            <div class="alibaba-product-price">${money(product.price)}</div>
+                            <div class="alibaba-product-meta">${Number(product.stock || 0) > 0 ? '✓ In Stock' : 'Out of Stock'}</div>
                         </div>
-                    `;
-                }
-            } catch (error) {
-                console.error('Error loading products:', error);
-                document.getElementById('products').innerHTML = 
-                    '<p class="alert-error" style="grid-column: 1/-1;">Failed to load products</p>';
-            }
+                    </div>
+                `;
+            }).join('');
         }
 
-        // Update auth link
-        function updateAuthLink() {
-            const authLink = document.getElementById('auth-link');
-            const dashboardLink = document.getElementById('dashboard-link');
-            const dashboardNav = document.getElementById('dashboard-nav');
-            const cartCount = document.getElementById('cart-count');
-            
-            if (api.isAuthenticated()) {
-                authLink.textContent = 'Logout';
-                authLink.href = '#';
-                authLink.onclick = (e) => {
-                    e.preventDefault();
-                    api.logout();
-                };
-                
-                // Show dashboard link and set URL based on user role
-                dashboardNav.style.display = 'block';
-                dashboardLink.href = 'buyer-dashboard.html'; // Default
-                dashboardLink.textContent = '📊 Dashboard';
-                
-                // Determine dashboard URL based on user role
-                api.getProfile().then(user => {
-                    if (user.role === 'ADMIN') {
-                        dashboardLink.href = 'admin-dashboard.html';
-                        dashboardLink.textContent = '🔧 Admin Panel';
-                    } else if (user.role === 'SELLER') {
-                        dashboardLink.href = 'seller-dashboard.html';
-                        dashboardLink.textContent = '🏪 Seller Center';
-                    } else {
-                        dashboardLink.href = 'buyer-dashboard.html';
-                        dashboardLink.textContent = '📊 My Account';
-                    }
-                }).catch(() => {
-                    // Keep default if profile fetch fails
-                    dashboardLink.href = 'buyer-dashboard.html';
-                    dashboardLink.textContent = '📊 Dashboard';
-                });
-            } else {
-                authLink.textContent = 'Login';
-                authLink.href = 'login.html';
-                authLink.onclick = null;
-                dashboardNav.style.display = 'none';
+        // Load all data
+        async function loadHome() {
+            checkAuth();
+
+            // Load categories
+            const categoriesData = await fetchJson('/api/categories/');
+            homeState.categories = Array.isArray(categoriesData) ? categoriesData : [];
+            renderCategories();
+
+            // Load all active products
+            const productsData = await fetchJson('/api/products/?status=ACTIVE');
+            homeState.allProducts = Array.isArray(productsData) ? productsData : (productsData?.results || []);
+
+            if (homeState.allProducts.length === 0) {
+                document.getElementById('new-arrivals-grid').innerHTML = '<div class="alibaba-empty" style="grid-column: 1/-1; padding: 40px;">No products available yet.</div>';
+                document.getElementById('hot-trends-grid').innerHTML = '';
+                document.getElementById('top-deals-grid').innerHTML = '';
+                return;
             }
-            
-            // Update cart count
-            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            cartCount.textContent = cart.length;
+
+            // Render sections (simple split for demo; in production, sort/filter by metadata)
+            renderGrid('new-arrivals-grid', homeState.allProducts.slice(0, 8));
+            renderGrid('hot-trends-grid', homeState.allProducts.slice(8, 16));
+            renderGrid('top-deals-grid', homeState.allProducts.slice(16, 24));
         }
 
-        // Real-time cart counter update
-        function startCartWatcher() {
-            // Update cart count every 2 seconds
-            setInterval(() => {
-                const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-                const cartCount = document.getElementById('cart-count');
-                if (cartCount) {
-                    cartCount.textContent = cart.length;
-                }
-            }, 2000);
-        }
-
-        // Listen for storage changes (cart updates from other tabs)
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'cart') {
-                const cart = JSON.parse(e.newValue || '[]');
-                const cartCount = document.getElementById('cart-count');
-                if (cartCount) {
-                    cartCount.textContent = cart.length;
-                }
-            }
+        // Search form
+        document.getElementById('hero-search').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const query = document.getElementById('hero-query').value.trim();
+            const params = new URLSearchParams();
+            if (query) params.set('q', query);
+            window.location.href = `./products.html${params.toString() ? `?${params.toString()}` : ''}`;
         });
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            loadCategories();
-            loadProducts();
-            updateAuthLink();
-            startCartWatcher();
-        });
+        loadHome();
     </script>
-    
-    <!-- Smart Navigation System -->
-    <script src="/static/js/navigation.js"></script>
 </body>
 </html>

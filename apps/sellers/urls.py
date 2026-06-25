@@ -10,4 +10,6 @@ urlpatterns = [
     path('sellers/dashboard/', dashboard.seller_dashboard, name='seller-dashboard'),
     path('sellers/my-products/', dashboard.my_products, name='my-products'),
     path('sellers/my-orders/', dashboard.my_orders, name='my-orders'),
+    path('sellers/verification/', views.seller_verification_status, name='seller-verification-status'),
+    path('sellers/verification/submit/', views.submit_seller_verification, name='seller-verification-submit'),
 ]

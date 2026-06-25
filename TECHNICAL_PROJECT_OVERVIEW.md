@@ -30,7 +30,7 @@ Optimistic is a complete, law-driven, multi-vendor e-commerce marketplace built 
 ### Frontend
 - **Architecture:** Pure HTML5 + Vanilla JavaScript (no frameworks)
 - **Styling:** Custom CSS (Flexbox/Grid)
-- **Theme:** Alibaba-style ocean blue (#1890FF) and grey palette
+- **Theme:** Optimistic Purple (#7C3AED) and deep violet palette
 - **API Integration:** Centralized API client (api.js)
 - **Authentication:** JWT token management with refresh logic
 
@@ -427,9 +427,9 @@ POST   /api/reports/                 # Submit report
 ## 🎨 UI/UX Design
 
 ### Theme
-- **Primary:** Ocean Blue (#1890FF) — Alibaba-style
+- **Primary:** Optimistic Purple (#7C3AED)
 - **Secondary:** Success Green (#52C41A)
-- **Accent:** Orange (#FA8C16)
+- **Accent:** Lavender (#A78BFA)
 - **Danger:** Red (#FF4D4F)
 - **Text:** Dark grey (#262626) to light grey (#8C8C8C)
 - **Backgrounds:** Light grey (#F5F5F5) to white

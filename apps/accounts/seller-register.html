@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Become a Seller — Optimistic</title>
+    <link rel="stylesheet" href="/static/css/modern.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-slate-50">
+    <nav class="navbar-modern"><div class="container nav-container"></div></nav>
+
+    <main class="container py-20">
+        <div class="max-w-xl mx-auto card-modern p-10">
+            <div class="text-center mb-10">
+                <img src="/static/images/brand/logo-purple.png" class="h-12 mx-auto mb-4" alt="Optimistic">
+                <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">Empower Your Business</h1>
+                <p class="mt-2 text-slate-500">Join Zambia's next-generation marketplace.</p>
+            </div>
+            <p class="mb-8 text-grey">Empowering Zambian entrepreneurs. Complete your KYC to start reaching thousands of buyers.</p>
+            
+            <form id="seller-reg-form" class="space-y-6">
+                <div class="form-group">
+                    <label>Store Name</label>
+                    <input type="text" name="store_name" class="form-control" required placeholder="e.g. Lusaka Tech Hub">
+                </div>
+                
+                <div class="form-group">
+                    <label>Business Type</label>
+                    <select name="business_type" class="form-control">
+                        <option value="SOLE_TRADER">Sole Trader</option>
+                        <option value="REGISTERED_COMPANY">Registered Company</option>
+                    </select>
+                </div>
+
+                <div class="bg-purple-50 p-4 border-l-4 border-purple-500 rounded mb-6">
+                    <small>🛡️ <strong>KYC Required:</strong> You will need to upload your NRC or Passport in the next step to be verified.</small>
+                </div>
+
+                <button type="submit" class="btn btn-purple-full w-full">Apply to Sell</button>
+            </form>
+        </div>
+    </main>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/navigation.js"></script>
+</body>
+</html>

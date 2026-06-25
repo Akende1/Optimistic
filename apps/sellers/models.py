@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
 
 
 class Seller(models.Model):
@@ -96,6 +97,14 @@ class Seller(models.Model):
     physical_address = models.TextField(
         blank=True,
         help_text="Business street address, plot number"
+    )
+    primary_location = models.ForeignKey(
+        'logistics.ZambianLocation',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='sellers',
+        help_text='Primary operating location (province/city/zone)'
     )
     town_city = models.CharField(
         max_length=100,
@@ -311,11 +320,30 @@ class SellerVerification(models.Model):
         verbose_name_plural = 'Seller Verification Documents'
     
     def __str__(self):
-        return f"{self.seller.store_name} - {self.get_status_display()}"
+        return f"{self.seller.store_name} - {self.get_status_display()}"  # type: ignore[attr-defined]
+
+    def submit_for_review(self):
+        """Mark the KYC packet as submitted and update seller verification state."""
+        required_fields = [self.government_id_type, self.government_id_number, self.government_id_front, self.government_id_back]
+        if not all(required_fields):
+            raise ValidationError('Government ID type, number, front image, and back image are required before submission.')
+
+        self.status = 'PENDING'
+        self.reviewed_at = None
+        self.reviewed_by = None
+        self.rejection_reason = ''
+        self.save()
+
+        self.seller.verification_status = 'SUBMITTED'
+        self.seller.verified = False
+        self.seller.verification_notes = ''
+        self.seller.save(update_fields=['verification_status', 'verified', 'verification_notes'])
     
     def approve(self, admin_user):
         """Approve seller verification and activate seller account."""
         from django.utils import timezone
+        from apps.notifications.signals import seller_verified as seller_verified_signal
+
         self.status = 'APPROVED'
         self.reviewed_at = timezone.now()
         self.reviewed_by = admin_user
@@ -327,10 +355,14 @@ class SellerVerification(models.Model):
         self.seller.verified_at = timezone.now()
         self.seller.verified_by = admin_user
         self.seller.save()
+
+        seller_verified_signal.send(sender=self.__class__, seller=self.seller)
     
     def reject(self, admin_user, reason):
         """Reject seller verification with reason."""
         from django.utils import timezone
+        from apps.notifications.models import Notification
+
         self.status = 'REJECTED'
         self.reviewed_at = timezone.now()
         self.reviewed_by = admin_user
@@ -342,3 +374,11 @@ class SellerVerification(models.Model):
         self.seller.verification_status = 'REJECTED'
         self.seller.verification_notes = reason
         self.seller.save()
+
+        Notification.create_notification(
+            user=self.seller.user,
+            notification_type='SELLER',
+            title='Seller Verification Rejected',
+            message=f'Your seller verification for "{self.seller.store_name}" was rejected. Reason: {reason}',
+            related_id=self.seller.id,
+        )

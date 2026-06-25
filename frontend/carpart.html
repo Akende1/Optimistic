@@ -1,0 +1,15 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimistic | Car Parts</title>
+</head>
+<body>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const query = params.get('q') || 'car parts';
+        window.location.replace(`./products.html?q=${encodeURIComponent(query)}`);
+    </script>
+</body>
+</html>

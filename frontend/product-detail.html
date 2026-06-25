@@ -1,154 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product Details — Optimistic</title>
-    <link rel="stylesheet" href="/static/css/base.css">
-    <link rel="stylesheet" href="/static/css/layout.css">
-    <link rel="stylesheet" href="/static/css/components.css">
-    <link rel="stylesheet" href="/static/css/mobile.css">
-    <link rel="stylesheet" href="/static/css/responsive.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Optimistic | Product Detail</title>
+	<link rel="stylesheet" href="./style/storefront-2026.css">
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="container nav-container">
-            <a href="index.html" class="nav-logo">Optimistic</a>
-            <ul class="nav-links">
-                <li><a href="index.html">Home</a></li>
-                <li><a href="products.html">Products</a></li>
-                <li><a href="cart.html">🛒 Cart <span id="cart-count" class="badge badge-danger">0</span></a></li>
-                <li><a href="#" id="auth-link">Login</a></li>
-            </ul>
-        </div>
-    </nav>
+	<div class="sf-shell">
+		<header class="sf-topbar">
+			<a class="sf-brand" href="./index.html">OPTI<span>MISTIC</span></a>
+			<div class="sf-search" style="pointer-events:none; opacity:.95;">
+				<input type="text" value="Product details" readonly>
+			</div>
+			<a class="sf-btn ghost" href="./products.html">Back to catalog</a>
+		</header>
 
-    <!-- Product Detail Section -->
-    <section class="section">
-        <div class="container">
-            <div id="product-detail">
-                <div class="spinner"></div>
-            </div>
-        </div>
-    </section>
+		<section id="detail-state" class="sf-loading" style="margin-top:18px;">Loading product...</section>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <p>© 2026 Optimistic · Proudly Built for Zambia 🇿🇲</p>
-        </div>
-    </footer>
+		<section id="detail-view" class="sf-detail" hidden>
+			<div id="detail-media" class="sf-detail-media"></div>
+			<article class="sf-card sf-detail-card">
+				<span class="sf-kicker" id="detail-category">Category</span>
+				<h1 id="detail-title">Product</h1>
+				<p class="sf-price" id="detail-price">ZMW 0.00</p>
+				<div class="sf-detail-meta" id="detail-meta"></div>
+				<hr class="sf-divider">
+				<p class="sf-muted" id="detail-description"></p>
+				<div class="sf-actions-col" style="margin-top:16px;">
+					<input class="sf-number" id="detail-qty" type="number" value="1" min="1" step="1">
+					<button id="add-to-cart" class="sf-btn primary" type="button">Add to cart</button>
+					<a class="sf-btn" href="./shoppingcart.html">Open cart</a>
+				</div>
+				<div id="detail-message" style="margin-top:12px;"></div>
+			</article>
+		</section>
+	</div>
 
-    <script src="/static/js/api.js"></script>
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const productId = urlParams.get('id');
+	<script>
+		const params = new URLSearchParams(window.location.search);
+		const productId = params.get('id');
 
-        async function loadProduct() {
-            if (!productId) {
-                window.location.href = 'products.html';
-                return;
-            }
+		function money(value) {
+			const n = Number(value || 0);
+			try {
+				return new Intl.NumberFormat('en-ZM', { style: 'currency', currency: 'ZMW' }).format(n);
+			} catch (_) {
+				return `ZMW ${n.toFixed(2)}`;
+			}
+		}
 
-            try {
-                const product = await api.getProduct(productId);
-                const container = document.getElementById('product-detail');
-                
-                container.innerHTML = `
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; margin-bottom: 3rem;">
-                        <div>
-                            <div style="width: 100%; height: 500px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 1rem; display: flex; align-items: center; justify-content: center; font-size: 8rem; box-shadow: var(--shadow-lg);">
-                                📦
-                            </div>
-                        </div>
-                        <div>
-                            <div class="badge badge-${product.status === 'ACTIVE' ? 'success' : 'warning'}" style="margin-bottom: 1rem;">
-                                ${product.status}
-                            </div>
-                            <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">${product.name}</h1>
-                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
-                                <div class="product-price" style="font-size: 3rem; margin: 0;">K${product.price}</div>
-                                <div class="badge ${product.stock > 0 ? 'badge-success' : 'badge-danger'}">
-                                    ${product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
-                                </div>
-                            </div>
-                            <div style="padding: 1.5rem; background: var(--bg-light); border-radius: 0.875rem; margin-bottom: 1.5rem;">
-                                <div style="font-weight: 600; color: var(--text-medium); margin-bottom: 0.5rem;">Sold by</div>
-                                <div style="font-size: 1.25rem; font-weight: 700; color: var(--text-dark);">👤 ${product.seller_name}</div>
-                            </div>
-                            <div style="padding: 1.5rem; background: var(--bg-light); border-radius: 0.875rem; margin-bottom: 2rem;">
-                                <div style="font-weight: 600; color: var(--text-medium); margin-bottom: 0.5rem;">Category</div>
-                                <div style="font-size: 1.125rem; font-weight: 600; color: var(--primary-color);">${product.category_name || 'Uncategorized'}</div>
-                            </div>
-                            <div style="margin-bottom: 2rem;">
-                                <h3 style="margin-bottom: 1rem;">Description</h3>
-                                <p style="line-height: 1.8; color: var(--text-medium);">${product.description || 'No description available.'}</p>
-                            </div>
-                            <div style="display: flex; gap: 1rem;">
-                                <button class="btn btn-primary" onclick="addToCart(${product.id})" style="flex: 1;" ${product.stock <= 0 ? 'disabled' : ''}>
-                                    🛒 Add to Cart
-                                </button>
-                                <button class="btn btn-secondary" onclick="buyNow(${product.id})" ${product.stock <= 0 ? 'disabled' : ''}>
-                                    ⚡ Buy Now
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            } catch (error) {
-                console.error('Error loading product:', error);
-                document.getElementById('product-detail').innerHTML = `
-                    <div class="alert alert-error">
-                        Failed to load product details. <a href="products.html">Back to Products</a>
-                    </div>
-                `;
-            }
-        }
+		function getCart() {
+			const raw = localStorage.getItem('optimisticCart') || localStorage.getItem('legacyCart') || '[]';
+			try {
+				const list = JSON.parse(raw);
+				return Array.isArray(list) ? list : [];
+			} catch (_) {
+				return [];
+			}
+		}
 
-        function addToCart(productId) {
-            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            const existing = cart.find(item => item.id === productId);
-            
-            if (existing) {
-                existing.quantity += 1;
-            } else {
-                cart.push({ id: productId, quantity: 1 });
-            }
-            
-            localStorage.setItem('cart', JSON.stringify(cart));
-            updateCartCount();
-            alert('Added to cart! 🛒');
-        }
+		function saveCart(items) {
+			localStorage.setItem('optimisticCart', JSON.stringify(items));
+			localStorage.setItem('legacyCart', JSON.stringify(items));
+		}
 
-        function buyNow(productId) {
-            addToCart(productId);
-            window.location.href = 'cart.html';
-        }
+		function setMessage(text, type = 'ok') {
+			const el = document.getElementById('detail-message');
+			if (!text) {
+				el.innerHTML = '';
+				return;
+			}
+			if (type === 'error') {
+				el.innerHTML = `<div class="sf-error">${text}</div>`;
+				return;
+			}
+			el.innerHTML = `<div class="sf-kicker">${text}</div>`;
+		}
 
-        function updateCartCount() {
-            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-            document.getElementById('cart-count').textContent = count;
-        }
+		async function fetchJson(path) {
+			const response = await fetch(path);
+			const payload = await response.json().catch(() => ({}));
+			if (!response.ok) throw new Error(payload.detail || `Request failed (${response.status})`);
+			return payload;
+		}
 
-        function updateAuthLink() {
-            const authLink = document.getElementById('auth-link');
-            if (api.isAuthenticated()) {
-                authLink.textContent = 'Profile';
-                authLink.href = 'profile.html';
-            } else {
-                authLink.textContent = 'Login';
-                authLink.href = 'login.html';
-            }
-        }
+		function renderProduct(product) {
+			const image = product?.images?.find((i) => i?.image_url)?.image_url || product?.images?.[0]?.image_url || '';
+			const stock = Number(product.stock || 0);
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadProduct();
-            updateCartCount();
-            updateAuthLink();
-        });
-    </script>
+			document.getElementById('detail-title').textContent = product.name || 'Untitled product';
+			document.getElementById('detail-price').textContent = money(product.price);
+			document.getElementById('detail-category').textContent = product.category_name || 'Uncategorized';
+			document.getElementById('detail-description').textContent = product.description || 'No description available for this product.';
+			document.getElementById('detail-meta').innerHTML = `
+				<div class="sf-list-item"><span>Seller</span><strong>${product.seller_name || 'Optimistic Seller'}</strong></div>
+				<div class="sf-list-item"><span>Stock</span><strong>${stock > 0 ? `${stock} available` : 'Out of stock'}</strong></div>
+				<div class="sf-list-item"><span>Status</span><strong>${product.status || 'ACTIVE'}</strong></div>
+			`;
+
+			document.getElementById('detail-media').innerHTML = image
+				? `<img src="${image}" alt="${(product.name || 'Product').replace(/"/g, '&quot;')}">`
+				: '<div class="sf-media-empty">No image uploaded by seller</div>';
+
+			const addBtn = document.getElementById('add-to-cart');
+			addBtn.disabled = stock <= 0;
+			addBtn.textContent = stock > 0 ? 'Add to cart' : 'Out of stock';
+			addBtn.onclick = () => {
+				const qtyInput = document.getElementById('detail-qty');
+				const qty = Math.max(1, Number(qtyInput.value || 1));
+				if (qty > stock) {
+					setMessage(`Only ${stock} item(s) currently available.`, 'error');
+					return;
+				}
+
+				const cart = getCart();
+				const index = cart.findIndex((item) => Number(item.id) === Number(product.id));
+				const imageList = (product.images || []).map((i) => i.image_url).filter(Boolean);
+
+				if (index >= 0) {
+					cart[index].qty = Number(cart[index].qty || 0) + qty;
+				} else {
+					cart.push({
+						id: product.id,
+						productTitle: product.name,
+						price: Number(product.price || 0),
+						qty,
+						productImg: imageList
+					});
+				}
+
+				saveCart(cart);
+				setMessage('Added to cart successfully.');
+			};
+
+			document.getElementById('detail-state').hidden = true;
+			document.getElementById('detail-view').hidden = false;
+		}
+
+		async function init() {
+			if (!productId) {
+				document.getElementById('detail-state').className = 'sf-error';
+				document.getElementById('detail-state').textContent = 'Missing product id. Open this page from the product catalog.';
+				return;
+			}
+
+			try {
+				const product = await fetchJson(`/api/products/${encodeURIComponent(productId)}/`);
+				renderProduct(product);
+			} catch (error) {
+				document.getElementById('detail-state').className = 'sf-error';
+				document.getElementById('detail-state').textContent = error.message || 'Unable to load this product.';
+			}
+		}
+
+		init();
+	</script>
 </body>
 </html>

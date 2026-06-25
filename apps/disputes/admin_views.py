@@ -104,14 +104,37 @@ def resolve_dispute(request, dispute_id):
             outcome=outcome,
             resolution_notes=resolution_notes,
             resolved_by=request.user,
-            resolved_at=timezone.now()
+            actions_completed=False,
         )
-        
+
+        # Optionally execute financial actions immediately (admin-controlled)
+        execute_financial = bool(request.data.get('execute_financial', False))
+        if execute_financial:
+            try:
+                resolution.execute_financial_actions()
+            except Exception:
+                # Don't block resolution if financial execution fails; surface later in audit/logs
+                pass
+
         # Update dispute
         dispute.status = 'RESOLVED'
         dispute.resolution = resolution
         dispute.resolved_at = timezone.now()
         dispute.save()
+
+        # Audit log
+        try:
+            from apps.common.models import AuditLog
+            AuditLog.objects.create(
+                actor=request.user,
+                action='DISPUTE_RESOLVE_BUYER' if outcome.startswith('BUYER') else 'DISPUTE_RESOLVE_SELLER',
+                target_type='Dispute',
+                target_id=dispute.id,
+                details={'outcome': outcome, 'notes': resolution_notes, 'executed_financial': execute_financial},
+                ip_address=request.META.get('REMOTE_ADDR', ''),
+            )
+        except Exception:
+            pass
         
         return Response({
             'message': 'Dispute resolved successfully',

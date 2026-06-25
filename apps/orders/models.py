@@ -72,6 +72,11 @@ class Order(models.Model):
         ('DELIVERED', 'Delivered'),          # Buyer confirmed receipt or auto-confirmed
         ('CANCELLED', 'Cancelled'),          # User/system cancelled
     )
+
+    ORDER_TYPE_CHOICES = (
+        ('RETAIL', 'Retail'),
+        ('PURCHASE_ORDER', 'Purchase Order'),
+    )
     
     # Valid state transitions
     VALID_TRANSITIONS = {
@@ -88,6 +93,13 @@ class Order(models.Model):
         on_delete=models.CASCADE,
         related_name='orders'
     )
+    order_type = models.CharField(max_length=20, choices=ORDER_TYPE_CHOICES, default='RETAIL', db_index=True)
+    po_number = models.CharField(max_length=64, blank=True, db_index=True)
+    company_name = models.CharField(max_length=180, blank=True)
+    company_tax_id = models.CharField(max_length=64, blank=True)
+    payment_terms = models.CharField(max_length=80, blank=True, help_text='e.g., NET_30, NET_45, COD')
+    procurement_notes = models.TextField(blank=True)
+    requested_fulfillment_date = models.DateField(null=True, blank=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING', db_index=True)
     
@@ -158,6 +170,14 @@ class Order(models.Model):
                     f"Invalid status transition from {self.status} to {new_status}. "
                     f"Valid transitions: {', '.join(valid_next_states) if valid_next_states else 'None (terminal state)'}"
                 )
+
+    def clean(self):
+        super().clean()
+        if self.order_type == 'PURCHASE_ORDER':
+            if not self.po_number:
+                raise ValidationError('po_number is required for purchase orders.')
+            if not self.company_name:
+                raise ValidationError('company_name is required for purchase orders.')
     
     def save(self, *args, **kwargs):
         """Override save to validate state transitions."""

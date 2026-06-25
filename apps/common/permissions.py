@@ -3,6 +3,20 @@ Role-based permissions for API access control.
 """
 from rest_framework.permissions import BasePermission
 
+from apps.common.api import get_user_delivery_partner, get_user_seller
+
+
+class IsVerifiedAccount(BasePermission):
+    """Permission: User must have completed phone+email verification."""
+
+    def has_permission(self, request, view):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and hasattr(request.user, 'is_account_verified')
+            and request.user.is_account_verified()
+        )
+
 
 class IsSeller(BasePermission):
     """
@@ -26,10 +40,12 @@ class IsSeller(BasePermission):
             # Only authenticated sellers can access
     """
     def has_permission(self, request, view):
+        seller = get_user_seller(request.user)
         return (
             request.user 
             and request.user.is_authenticated 
             and request.user.role == 'SELLER'
+            and seller is not None
         )
 
 
@@ -60,12 +76,17 @@ class IsVerifiedSeller(BasePermission):
             # Only verified sellers can publish
     """
     def has_permission(self, request, view) -> bool:  # type: ignore[override]
+        seller = get_user_seller(request.user)
+        is_verified_account = bool(
+            hasattr(request.user, 'is_account_verified') and request.user.is_account_verified()
+        )
         return bool(
             request.user 
             and request.user.is_authenticated 
+            and is_verified_account
             and request.user.role == 'SELLER'
-            and hasattr(request.user, 'seller')
-            and request.user.seller.verified
+            and seller
+            and seller.verified
         )
 
 
@@ -148,12 +169,13 @@ class IsVerifiedCourier(BasePermission):
     3. Check if delivery_partner_profile.verified == True
     """
     def has_permission(self, request, view) -> bool:  # type: ignore[override]
+        delivery_partner = get_user_delivery_partner(request.user)
         return bool(
             request.user 
             and request.user.is_authenticated 
             and request.user.role == 'COURIER'
-            and hasattr(request.user, 'delivery_partner')
-            and request.user.delivery_partner.verified
+            and delivery_partner
+            and delivery_partner.verified
         )
 
 
@@ -194,12 +216,5 @@ class CanSuspendUsers(BasePermission):
             request.user 
             and request.user.is_authenticated 
             and request.user.is_admin()
-        )
-        return (
-            request.user 
-            and request.user.is_authenticated 
-            and request.user.role == 'COURIER'
-            and hasattr(request.user, 'delivery_partner_profile')
-            and request.user.delivery_partner_profile.verified
         )
 
