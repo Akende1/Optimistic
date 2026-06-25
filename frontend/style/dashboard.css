@@ -1,4 +1,4 @@
-/* Alibaba-style Dashboard Pattern */
+/* Optimistic-style Dashboard Pattern */
 
 .dashboard-shell {
     background: radial-gradient(circle at 8% 6%, rgba(139, 149, 255, 0.2), transparent 28%),
@@ -287,3 +287,4 @@
         grid-template-columns: 1fr;
     }
 }
+

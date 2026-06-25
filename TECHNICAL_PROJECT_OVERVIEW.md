@@ -532,7 +532,7 @@ The backend is fully prepared for mobile app integration:
 - `DASHBOARDS_COMPLETE.md` — UI features
 - `IMAGE_UPLOAD_SYSTEM.md` — Upload implementation
 - `ORDER_DELIVERY_SYSTEM.md` — Logistics details
-- `ALIBABA_STYLE_COMPLETE.md` — Design system
+- `OPTIMISTIC_STYLE_COMPLETE.md` — Design system
 - `BUSINESS_LOGIC.md` — Business rules
 - `MOBILE_APP_REQUIREMENTS.md` — Mobile planning
 - `CHECKLIST.md` — Implementation tracking
@@ -556,7 +556,7 @@ The backend is fully prepared for mobile app integration:
 - Product approval workflow
 - 15 frontend pages (HTML/CSS/JS)
 - Responsive design
-- Alibaba-style theme
+- Optimistic-style theme
 - Buyer/Seller/Admin dashboards
 - Zambian location system (57 locations)
 - Courier registration & management
@@ -682,7 +682,7 @@ python manage.py runserver
 4. **Image Management** — Multi-image upload with drag-and-drop UI
 5. **Trust System** — Reviews, ratings, reports, and verification workflows
 6. **Admin Control** — Comprehensive Django Admin for platform management
-7. **Modern Frontend** — Responsive, API-driven interface with Alibaba-style design
+7. **Modern Frontend** — Responsive, API-driven interface with Optimistic-style design
 8. **Mobile-Ready** — RESTful API ready for mobile app development
 9. **Documentation** — Extensive technical and business documentation
 10. **Data Seeding** — Quick setup with realistic Zambian data

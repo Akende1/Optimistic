@@ -255,7 +255,7 @@ tokens:
 
 ## Optimistic — Design System
 
-Optimistic is a modern, trust-first e-commerce marketplace designed for the Zambian market. The design system reflects a sophisticated, data-driven aesthetic inspired by global platforms like Alibaba, with a focus on clarity, accessibility, and delightful interaction patterns.
+Optimistic is a modern, trust-first e-commerce marketplace designed for the Zambian market. The design system reflects a sophisticated, data-driven aesthetic inspired by global platforms like Optimistic, with a focus on clarity, accessibility, and delightful interaction patterns.
 
 ### Design Philosophy
 
@@ -383,7 +383,7 @@ All buttons have 180ms transitions, lifting 1px on hover to signal clickability.
 Input fields use a subtle background (`rgba(255, 255, 255, 0.04)`) and a 1px border (`rgba(255, 255, 255, 0.12)`). Labels are uppercase, 12px, 600-weight, with 0.08em tracking. Placeholder text uses the muted color (`#99a6bd`).
 
 #### Dashboard Layout
-Dashboards follow an Alibaba-inspired grid:
+Dashboards follow an Optimistic-inspired grid:
 ```
 [Sticky Navbar]
 [Container]
