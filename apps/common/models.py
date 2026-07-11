@@ -1,5 +1,7 @@
 from django.db import models
 from django.conf import settings
+import uuid
+from django.utils import timezone
 
 
 class AuditLog(models.Model):
@@ -126,3 +128,57 @@ class AuditLog(models.Model):
     def delete(self, *args, **kwargs):
         # Prevent deletion
         raise ValueError('Audit logs cannot be deleted')
+
+
+class OutboxEvent(models.Model):
+    """Durable post-commit integration event with retry and idempotency state."""
+    STATUS_CHOICES = (('PENDING', 'Pending'), ('PROCESSING', 'Processing'), ('PUBLISHED', 'Published'), ('FAILED', 'Failed'))
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    topic = models.CharField(max_length=100, db_index=True)
+    aggregate_type = models.CharField(max_length=80)
+    aggregate_id = models.CharField(max_length=100)
+    idempotency_key = models.CharField(max_length=180, unique=True)
+    payload = models.JSONField(default=dict)
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='PENDING', db_index=True)
+    attempts = models.PositiveIntegerField(default=0)
+    available_at = models.DateTimeField(default=timezone.now, db_index=True)
+    locked_at = models.DateTimeField(null=True, blank=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+        indexes = [models.Index(fields=['status', 'available_at'])]
+
+
+class ProcessedEvent(models.Model):
+    """Consumer-side inbox preventing repeated effects after delivery retries."""
+    consumer = models.CharField(max_length=100)
+    event = models.ForeignKey(OutboxEvent, on_delete=models.PROTECT, related_name='receipts')
+    processed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['consumer', 'event'], name='unique_consumer_outbox_event')]
+
+
+class LegalAcceptance(models.Model):
+    """Immutable evidence that a user accepted a specific legal document version."""
+    DOCUMENT_CHOICES = (('TERMS','Platform Terms'),('PRIVACY','Privacy Notice'),('SELLER_TERMS','Seller Terms'))
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='legal_acceptances')
+    document = models.CharField(max_length=20, choices=DOCUMENT_CHOICES)
+    version = models.CharField(max_length=20)
+    content_hash = models.CharField(max_length=64)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=500, blank=True)
+    accepted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=['user','document','version'],name='unique_user_legal_version')]
+
+    def save(self,*args,**kwargs):
+        if self.pk: raise ValueError('Legal acceptances are immutable.')
+        super().save(*args,**kwargs)
+
+    def delete(self,*args,**kwargs):
+        raise ValueError('Legal acceptances cannot be deleted.')

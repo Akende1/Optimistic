@@ -144,6 +144,25 @@ STATICFILES_DIRS = [
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# MVP async runtime. Redis is required outside local synchronous testing.
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://127.0.0.1:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://127.0.0.1:6379/1')
+CELERY_TASK_ACKS_LATE = True
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+# Production media can be switched to S3 without changing domain models.
+USE_S3 = config('USE_S3', default=False, cast=bool)
+if USE_S3:
+    INSTALLED_APPS += ['storages']
+    STORAGES = {
+        'default': {'BACKEND': 'storages.backends.s3.S3Storage'},
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+    }
+    AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
+    AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME', default='af-south-1')
+    AWS_QUERYSTRING_AUTH = False
+
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -201,6 +220,8 @@ SIMPLE_JWT = {
 
 # CORS Settings
 CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # Vite React client
+    "http://127.0.0.1:5173",
     "http://localhost:3000",  # React dev server
     "http://127.0.0.1:3000",
     "http://localhost:8000",  # Django dev server
@@ -209,6 +230,17 @@ CORS_ALLOWED_ORIGINS = [
 
 # Allow credentials for JWT authentication
 CORS_ALLOW_CREDENTIALS = True
+
+# Payment webhook verification. Configure secrets in the environment; never
+# commit production credentials. Provider adapters refuse callbacks when unset.
+PAYMENT_WEBHOOK_SECRETS = {
+    'MTN_MOMO': config('MTN_MOMO_WEBHOOK_SECRET', default=''),
+    'AIRTEL_MONEY': config('AIRTEL_MONEY_WEBHOOK_SECRET', default=''),
+    'TEST': config('TEST_PAYMENT_WEBHOOK_SECRET', default=''),
+}
+PAYMENT_SIMULATION_ENABLED = config('PAYMENT_SIMULATION_ENABLED', default=DEBUG, cast=bool)
+MVP_ORIGIN_PICKUP_FEE = config('MVP_ORIGIN_PICKUP_FEE', default='40.00')
+MVP_DESTINATION_LAST_MILE_FEE = config('MVP_DESTINATION_LAST_MILE_FEE', default='40.00')
 
 # Allow common headers needed for API calls
 CORS_ALLOW_HEADERS = [

@@ -20,13 +20,15 @@ class UserSerializer(serializers.ModelSerializer):
     seller_type = serializers.ChoiceField(choices=['INDIVIDUAL', 'BUSINESS'], required=False, allow_null=True)
     shop_name = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=100)
     profile_picture_url = serializers.SerializerMethodField()
+    accepts_terms = serializers.BooleanField(write_only=True)
+    accepts_privacy = serializers.BooleanField(write_only=True)
 
     class Meta:
         model = User
         fields = [
             'id', 'full_name', 'phone_number', 'email', 'password', 'confirm_password',
             'role', 'seller_type', 'shop_name', 'profile_picture', 'profile_picture_url',
-            'is_active', 'date_joined'
+            'is_active', 'date_joined', 'accepts_terms', 'accepts_privacy'
         ]
         read_only_fields = ['id', 'date_joined', 'is_active', 'profile_picture_url']
     
@@ -50,6 +52,8 @@ class UserSerializer(serializers.ModelSerializer):
         return normalized
 
     def validate(self, attrs):
+        if not attrs.get('accepts_terms') or not attrs.get('accepts_privacy'):
+            raise serializers.ValidationError('You must accept the Platform Terms and acknowledge the Privacy Notice.')
         if attrs['password'] != attrs['confirm_password']:
             raise serializers.ValidationError({'confirm_password': 'Passwords do not match.'})
 
@@ -74,6 +78,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
+        validated_data.pop('accepts_terms', None); validated_data.pop('accepts_privacy', None)
         full_name = validated_data.pop('full_name').strip()
         phone_number = validated_data.pop('phone_number').strip()
         password = validated_data.pop('password')
@@ -112,6 +117,11 @@ class UserSerializer(serializers.ModelSerializer):
                 verification_status='PENDING',
                 verified=False,
             )
+
+        from apps.common.legal import record_acceptance
+        request = self.context['request']
+        record_acceptance(user=user, document='TERMS', request=request)
+        record_acceptance(user=user, document='PRIVACY', request=request)
 
         return user
 

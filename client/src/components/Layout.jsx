@@ -1,0 +1,2 @@
+import {Link,Outlet} from 'react-router-dom';import {useCart} from '../stores/cart';
+export default function Layout(){const count=useCart(s=>s.lines.reduce((n,x)=>n+x.quantity,0));return <><header className="nav"><Link className="brand" to="/">Optimistic</Link><nav><Link to="/products">Shop</Link><Link to="/orders">Orders</Link><Link to="/cart">Cart ({count})</Link><Link to="/login">Sign in</Link></nav></header><Outlet/><footer>Optimistic Marketplace · Zambia</footer></>}

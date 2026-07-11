@@ -1,6 +1,16 @@
 from django.contrib import admin
 from django.utils import timezone
-from .models import DeliveryPartner, Delivery
+from .models import DeliveryPartner, Delivery, ReturnRequest, ReturnLine, CustodyEvent, ShippingRate
+
+class ReturnLineInline(admin.TabularInline):
+    model=ReturnLine;extra=0
+
+@admin.register(ReturnRequest)
+class ReturnRequestAdmin(admin.ModelAdmin):
+    list_display=('id','order','requested_by','status','return_by','created_at');list_filter=('status',);inlines=(ReturnLineInline,)
+
+admin.site.register(CustodyEvent)
+admin.site.register(ShippingRate)
 
 
 @admin.register(DeliveryPartner)

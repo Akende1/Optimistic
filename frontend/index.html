@@ -11,15 +11,16 @@
             justify-content: space-between;
             align-items: center;
             padding: 12px 20px;
-            background: rgba(6, 10, 18, 0.88);
+            background: #ffffff;
             border-bottom: 1px solid var(--border);
             margin-bottom: 20px;
+            box-shadow: 0 8px 22px rgba(31, 41, 55, 0.08);
         }
 
         .optimistic-topbar-brand {
             font-size: 24px;
             font-weight: 800;
-            letter-spacing: 0.08em;
+            letter-spacing: 0;
             color: var(--accent);
         }
 
@@ -37,9 +38,10 @@
         }
 
         .optimistic-topbar-actions .primary {
-            background: var(--accent);
-            color: var(--bg);
+            background: linear-gradient(180deg, #ffd86a, var(--accent));
+            color: #1f2937;
             font-weight: 600;
+            border: 1px solid #db8a00;
         }
 
         .optimistic-main {
@@ -78,8 +80,8 @@
         }
 
         .optimistic-sidebar-item:hover {
-            background: rgba(139, 149, 255, 0.1);
-            color: var(--accent);
+            background: #fff4df;
+            color: #8a4b00;
         }
 
         .optimistic-content {
@@ -89,10 +91,11 @@
         }
 
         .optimistic-hero {
-            background: linear-gradient(135deg, rgba(139, 149, 255, 0.08) 0%, rgba(90, 168, 255, 0.08) 100%);
+            background: linear-gradient(135deg, #fff1c2 0%, #ffffff 62%, #e9f1ff 100%);
             border: 1px solid var(--border);
             border-radius: 16px;
             padding: 24px;
+            box-shadow: var(--shadow);
         }
 
         .optimistic-hero h1 {
@@ -116,19 +119,19 @@
         .optimistic-search-box input {
             flex: 1;
             padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--border);
-            border-radius: 8px;
+            background: #ffffff;
+            border: 2px solid var(--accent);
+            border-radius: 6px;
             color: var(--text);
             font-size: 14px;
         }
 
         .optimistic-search-box button {
             padding: 12px 24px;
-            background: var(--accent);
-            color: var(--bg);
+            background: linear-gradient(180deg, #ffd86a, var(--accent));
+            color: #1f2937;
             border: 0;
-            border-radius: 8px;
+            border-radius: 6px;
             font-weight: 600;
             cursor: pointer;
             transition: opacity 0.2s;
@@ -186,14 +189,14 @@
 
         .optimistic-product:hover {
             border-color: var(--accent);
-            box-shadow: 0 8px 24px rgba(139, 149, 255, 0.15);
+            box-shadow: 0 12px 26px rgba(31, 41, 55, 0.12);
             transform: translateY(-2px);
         }
 
         .optimistic-product-image {
             width: 100%;
             height: 140px;
-            background: rgba(255, 255, 255, 0.04);
+            background: #f1f3f7;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -226,7 +229,7 @@
         .optimistic-product-price {
             font-size: 14px;
             font-weight: 700;
-            color: var(--accent);
+            color: #b12704;
         }
 
         .optimistic-product-meta {
@@ -325,7 +328,7 @@
         </main>
     </div>
 
-    <footer class="additional" style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.08);">
+    <footer class="additional" style="margin-top: 32px; padding: 24px 20px; border-top: 1px solid var(--border); background: #ffffff; color: var(--muted);">
         <p>Shop for everyday goods, discover trusted suppliers, or open a storefront on Optimistic.</p>
         <p>Buyer Hub | Seller Center | Logistics | Support | Privacy Policy | Terms of Use</p>
         <p>For consumers and businesses across Zambia and beyond.</p>

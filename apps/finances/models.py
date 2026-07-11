@@ -3,6 +3,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from decimal import Decimal
+import uuid
 
 
 class CommissionRule(models.Model):
@@ -214,6 +215,84 @@ class EscrowAccount(models.Model):
         self.save()
 
 
+class LedgerTransaction(models.Model):
+    """Immutable business event grouping balanced debit and credit entries."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    reference = models.CharField(max_length=160, unique=True)
+    event_type = models.CharField(max_length=50, db_index=True)
+    order = models.ForeignKey('orders.Order', on_delete=models.PROTECT, null=True, blank=True, related_name='ledger_transactions')
+    currency = models.CharField(max_length=3, default='ZMW')
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if self.pk and LedgerTransaction.objects.filter(pk=self.pk).exists():
+            raise ValidationError('Ledger transactions are immutable.')
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError('Ledger transactions cannot be deleted.')
+
+
+class LedgerEntry(models.Model):
+    """Immutable debit or credit posted to a named platform control account."""
+    SIDE_CHOICES = (('DEBIT', 'Debit'), ('CREDIT', 'Credit'))
+    transaction = models.ForeignKey(LedgerTransaction, on_delete=models.PROTECT, related_name='entries')
+    account = models.CharField(max_length=80, db_index=True)
+    side = models.CharField(max_length=6, choices=SIDE_CHOICES)
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    seller = models.ForeignKey('sellers.Seller', on_delete=models.PROTECT, null=True, blank=True, related_name='ledger_entries')
+    courier = models.ForeignKey('logistics.DeliveryPartner', on_delete=models.PROTECT, null=True, blank=True, related_name='ledger_entries')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.CheckConstraint(condition=models.Q(amount__gt=0), name='ledger_entry_positive_amount')]
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            raise ValidationError('Ledger entries are immutable.')
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError('Ledger entries cannot be deleted.')
+
+
+class EscrowFreeze(models.Model):
+    """Funds isolated from release while a dispute is active."""
+    STATUS_CHOICES = (('ACTIVE', 'Active'), ('RELEASED', 'Released'), ('REFUNDED', 'Refunded'))
+    order = models.ForeignKey('orders.Order', on_delete=models.PROTECT, related_name='escrow_freezes')
+    order_item = models.ForeignKey('orders.OrderItem', on_delete=models.PROTECT, null=True, blank=True, related_name='escrow_freezes')
+    dispute = models.OneToOneField('disputes.Dispute', on_delete=models.PROTECT, related_name='escrow_freeze')
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default='ZMW')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='ACTIVE')
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+
+class SellerPayoutRequest(models.Model):
+    """MVP manual withdrawal queue exported weekly by administrators."""
+    STATUS_CHOICES = (('PENDING', 'Pending'), ('APPROVED', 'Approved'), ('EXPORTED', 'Exported'), ('PAID', 'Paid'), ('REJECTED', 'Rejected'))
+    seller = models.ForeignKey('sellers.Seller', on_delete=models.PROTECT, related_name='payout_requests')
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    provider = models.CharField(max_length=20)
+    account_name = models.CharField(max_length=200)
+    account_number = models.CharField(max_length=100)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING', db_index=True)
+    requested_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
+    provider_reference = models.CharField(max_length=150, blank=True)
+
+    def clean(self):
+        if self.amount <= 0:
+            raise ValidationError('Payout amount must be positive.')
+        if not self.seller.can_publish_products():
+            raise ValidationError('Fully verified seller KYC and payout ownership are required.')
+        escrow = getattr(self.seller, 'escrow_account', None)
+        if not escrow or self.amount > escrow.available_balance:
+            raise ValidationError('Insufficient available seller balance.')
+
+
 class OrderFinancialSnapshot(models.Model):
     """
     Immutable financial record per order.
@@ -390,7 +469,7 @@ class OrderFinancialSnapshot(models.Model):
             subtotal=subtotal,
             commission_amount=total_commission,
             seller_earnings=seller_earnings,
-            delivery_fee=Decimal('0.00'),  # TODO: Calculate from delivery zone
+            delivery_fee=order.delivery_fee,
             platform_fee=Decimal('0.00'),
             status='HELD'
         )

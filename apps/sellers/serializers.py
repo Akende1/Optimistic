@@ -29,14 +29,14 @@ class SellerSerializer(serializers.ModelSerializer):
             'id', 'user', 'store_name', 'phone', 'description',
             'business_type', 'business_name', 'business_registration_number', 'tax_pin',
             'physical_address', 'town_city', 'province',
-            'payout_method', 'payout_provider', 'payout_account_name', 'payout_account_number',
+            'payout_method', 'payout_provider', 'payout_account_name', 'payout_account_number', 'payout_account_verified',
             'primary_location', 'primary_location_name', 'primary_location_type', 'primary_location_full',
             'profile_image', 'profile_image_url',
             'banner_image', 'banner_image_url',
             'verified', 'verification_status', 'verified_at', 'verified_by_username',
             'completion_percentage', 'kyc_status', 'kyc_rejection_reason', 'created_at'
         ]
-        read_only_fields = ['id', 'verified', 'verification_status', 'verified_at', 'verified_by_username', 'completion_percentage', 'kyc_status', 'kyc_rejection_reason', 'created_at']
+        read_only_fields = ['id', 'verified', 'verification_status', 'verified_at', 'verified_by_username', 'payout_account_verified', 'completion_percentage', 'kyc_status', 'kyc_rejection_reason', 'created_at']
     
     def get_profile_image_url(self, obj):
         if obj.profile_image:
@@ -142,6 +142,23 @@ class SellerUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Selected location is inactive.')
         return value
 
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        sensitive = {'business_type','business_name','business_registration_number','tax_pin',
+                     'physical_address','primary_location','payout_method','payout_provider',
+                     'payout_account_name','payout_account_number'}
+        changed = any(field in validated_data and getattr(instance, field) != value
+                      for field, value in validated_data.items() if field in sensitive)
+        instance = super().update(instance, validated_data)
+        if changed and instance.verified:
+            instance.verified = False
+            instance.verification_status = 'PENDING'
+            instance.payout_account_verified = False
+            instance.verification_notes = 'Identity-sensitive profile information changed; re-verification required.'
+            instance.save(update_fields=['verified','verification_status','payout_account_verified','verification_notes'])
+            instance.products.filter(status='ACTIVE').update(status='SUSPENDED')
+        return instance
+
 
 class SellerVerificationSerializer(serializers.ModelSerializer):
     """Seller KYC submission and status serializer."""
@@ -153,6 +170,8 @@ class SellerVerificationSerializer(serializers.ModelSerializer):
     government_id_back_url = serializers.SerializerMethodField()
     selfie_with_id_url = serializers.SerializerMethodField()
     reviewed_by_username = serializers.CharField(source='reviewed_by.username', read_only=True)
+    attests_information_accurate = serializers.BooleanField(write_only=True)
+    consents_to_identity_checks = serializers.BooleanField(write_only=True)
 
     class Meta:
         model = SellerVerification
@@ -161,6 +180,7 @@ class SellerVerificationSerializer(serializers.ModelSerializer):
             'government_id_type', 'government_id_number', 'government_id_front', 'government_id_front_url',
             'government_id_back', 'government_id_back_url', 'selfie_with_id', 'selfie_with_id_url',
             'status', 'rejection_reason', 'submitted_at', 'reviewed_at', 'reviewed_by', 'reviewed_by_username'
+            , 'attests_information_accurate', 'consents_to_identity_checks'
         ]
         read_only_fields = [
             'id', 'seller', 'seller_name', 'seller_verified', 'seller_verification_status',
@@ -191,6 +211,14 @@ class SellerVerificationSerializer(serializers.ModelSerializer):
         seller = self.context.get('seller') or getattr(self.instance, 'seller', None)
         if seller and seller.verified and seller.verification_status == 'VERIFIED':
             raise serializers.ValidationError('Verified sellers cannot overwrite approved KYC documents.')
+        if not attrs.pop('attests_information_accurate', False):
+            raise serializers.ValidationError({'attests_information_accurate': 'You must attest that the information is accurate.'})
+        if not attrs.pop('consents_to_identity_checks', False):
+            raise serializers.ValidationError({'consents_to_identity_checks': 'Consent is required to perform identity checks.'})
+        number = (attrs.get('government_id_number') or getattr(self.instance, 'government_id_number', '')).strip().upper()
+        if len(number) < 5:
+            raise serializers.ValidationError({'government_id_number': 'Enter a valid government ID number.'})
+        attrs['government_id_number'] = number
         return attrs
 
     @transaction.atomic

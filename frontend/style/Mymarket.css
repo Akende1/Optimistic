@@ -1,9 +1,7 @@
 body{
     margin: 0;
-    background:
-        radial-gradient(circle at top left, rgba(127, 140, 255, 0.12), transparent 30%),
-        linear-gradient(180deg, #08101d 0%, #050913 100%);
-    color: #eff4ff;
+    background: linear-gradient(180deg, #fff7e6 0, #f5f6f8 220px, #eef1f5 100%);
+    color: #1f2937;
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     font-weight: 400;
 }
@@ -14,10 +12,10 @@ body{
     
     position:relative;
     overflow:hidden;
-    border-radius: 28px;
-    border: 1px solid rgba(255,255,255,0.08);
-    background: rgba(255,255,255,0.03);
-    box-shadow: 0 24px 72px rgba(0,0,0,0.24);
+    border-radius: 12px;
+    border: 1px solid #d9dee8;
+    background: #ffffff;
+    box-shadow: 0 12px 32px rgba(31, 41, 55, 0.1);
     }
     #section_third{
         display: flex;
@@ -69,7 +67,7 @@ body{
     }
 
     .controls:hover{
-    background: rgba(127, 140, 255, 0.16);
+    background: #fff4df;
     transition:0.2s;
     }
 
@@ -99,7 +97,7 @@ body{
     }
 
     .active{
-    background:#7f8cff;
+    background:#ff8a00;
     }
 
     @media (max-width:576px){
@@ -125,7 +123,7 @@ body{
         padding: 8px;
         height: 42px;
         width: 100%;
-        border-bottom: 0.6px solid gray;
+        border-bottom: 1px solid #d9dee8;
         text-align: center;
         gap: 10px;
         /* border: 1px solid black; */
@@ -148,7 +146,7 @@ body{
         /* border: 1px solid red; */
         color: black;
         transition: 1s;
-        box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px;
+        box-shadow: rgba(31, 41, 55, 0.14) 0px 8px 24px;
     }
     .leaf{
         display: none;
@@ -161,7 +159,8 @@ body{
         flex-wrap: nowrap;
         font-size: .80em;
         width: 90%;
-        box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;;
+        background: #ffffff;
+        box-shadow: rgba(31, 41, 55, 0.12) 0px 10px 30px;
     }
     #category_div{
         /* border:  1px solid red; */

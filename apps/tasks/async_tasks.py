@@ -72,6 +72,34 @@ def auto_cancel_unpaid_orders():
     return cancelled_count
 
 
+def expire_checkout_reservations():
+    """Release expired inventory reservations atomically and idempotently."""
+    from apps.orders.services import expire_inventory_reservations
+    return expire_inventory_reservations()
+
+
+def dispatch_outbox_events():
+    """Publish durable integration events; safe for frequent concurrent workers."""
+    from apps.common.outbox import dispatch_batch
+    return dispatch_batch()
+
+
+def complete_protection_expired_orders():
+    """Complete delivered orders after protection expiry when no dispute is open."""
+    from apps.orders.models import Order
+    candidates = Order.objects.filter(
+        status='DELIVERED', protection_expires_at__lte=timezone.now()
+    )
+    completed = 0
+    for order in candidates:
+        try:
+            if order.complete():
+                completed += 1
+        except Exception as exc:
+            logger.warning('Could not auto-complete order %s: %s', order.pk, exc)
+    return completed
+
+
 def monitor_delivery_sla():
     """
     Monitor delivery SLA breaches and alert admin.
@@ -448,6 +476,18 @@ def detect_inactive_sellers():
 
 # Periodic tasks schedule (for Celery Beat):
 PERIODIC_TASKS = {
+    'dispatch-outbox-events': {
+        'task': 'apps.tasks.integration.dispatch_outbox_events',
+        'schedule': 'every 10 seconds',
+    },
+    'expire-checkout-reservations': {
+        'task': 'apps.tasks.orders.expire_checkout_reservations',
+        'schedule': 'every 5 minutes',
+    },
+    'complete-protection-expired-orders': {
+        'task': 'apps.tasks.orders.complete_protection_expired_orders',
+        'schedule': 'every 1 hour',
+    },
     'auto-cancel-unpaid': {
         'task': 'apps.tasks.orders.auto_cancel_unpaid_orders',
         'schedule': 'every 15 minutes',

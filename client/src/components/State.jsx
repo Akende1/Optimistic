@@ -1,0 +1,2 @@
+export function Screen({eyebrow,title,description,actions,children}){return <main className="section screen"><header className="screen-head"><div><small>{eyebrow}</small><h1>{title}</h1><p>{description}</p></div>{actions&&<div className="actions">{actions}</div>}</header>{children}</main>}
+export function Status({loading,error,empty,emptyText='Nothing here yet.'}){if(loading)return <div className="notice">Loading…</div>;if(error)return <div className="notice error" role="alert">{error.message}</div>;if(empty)return <div className="notice">{emptyText}</div>;return null}

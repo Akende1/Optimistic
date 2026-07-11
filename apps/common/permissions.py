@@ -87,7 +87,17 @@ class IsVerifiedSeller(BasePermission):
             and request.user.role == 'SELLER'
             and seller
             and seller.verified
+            and seller.verification_status == 'VERIFIED'
+            and seller.payout_account_verified
         )
+
+
+class IsVerifiedBuyer(BasePermission):
+    """Buyer must own both verified contact channels for commercial actions."""
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated
+                    and request.user.role == 'BUYER'
+                    and request.user.is_account_verified())
 
 
 class IsBuyer(BasePermission):

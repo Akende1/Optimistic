@@ -71,6 +71,7 @@ urlpatterns = [
     
     # API endpoints
     path('admin/', admin.site.urls),
+    path('api/v1/', include('apps.common.mobile_urls')),
     path('api/auth/', include('apps.accounts.urls')),
     path('api/', include('apps.products.urls')),
     path('api/', include('apps.sellers.urls')),

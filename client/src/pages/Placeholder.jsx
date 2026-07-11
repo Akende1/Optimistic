@@ -1,0 +1,1 @@
+import {useLocation} from 'react-router-dom';export default function Placeholder(){return <main className="section"><h1>{useLocation().pathname.slice(1)||'Optimistic'}</h1><p>This workflow is being migrated from the legacy interface.</p></main>}

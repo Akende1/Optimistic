@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from decimal import Decimal
 
 
 class SoftDeleteManager(models.Manager):
@@ -136,6 +137,27 @@ class Product(models.Model):
         default=0,
         help_text="Available quantity"
     )
+    reserved_stock = models.PositiveIntegerField(
+        default=0,
+        help_text='Units temporarily reserved by active checkouts.'
+    )
+    weight_kg = models.DecimalField(max_digits=8, decimal_places=3, default=Decimal('0.000'))
+    length_cm = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal('0.00'))
+    width_cm = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal('0.00'))
+    height_cm = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal('0.00'))
+    shipping_class = models.CharField(max_length=30, default='STANDARD')
+    tax_category = models.CharField(max_length=30, default='STANDARD')
+
+    @property
+    def available_stock(self):
+        """Units available to new checkouts; stock remains physical on-hand."""
+        return max(self.stock - self.reserved_stock, 0)
+
+    def dimensional_weight_kg(self, divisor=Decimal('5000')):
+        return (self.length_cm * self.width_cm * self.height_cm / divisor).quantize(Decimal('0.001'))
+
+    def chargeable_weight_kg(self, divisor=Decimal('5000')):
+        return max(self.weight_kg, self.dimensional_weight_kg(divisor))
     
     # Status: Controls visibility (DRAFT=hidden, ACTIVE=visible, SUSPENDED=hidden)
     status = models.CharField(
@@ -235,6 +257,8 @@ class Product(models.Model):
         # Stock validation: Although PositiveIntegerField helps, double-check
         if self.stock < 0:
             raise ValidationError("Stock cannot be negative")
+        if self.reserved_stock < 0 or self.reserved_stock > self.stock:
+            raise ValidationError('Reserved stock must be between zero and physical stock.')
         
         # Critical business rule: Only verified sellers can have ACTIVE products
         # This prevents unverified sellers from bypassing the approval process

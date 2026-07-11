@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 
 class Seller(models.Model):
@@ -150,6 +151,7 @@ class Seller(models.Model):
         blank=True,
         help_text="Account number or mobile money phone number"
     )
+    payout_account_verified = models.BooleanField(default=False, help_text='Admin confirmed payout account ownership matches seller identity.')
     
     # Verification Status (More granular than verified=True/False)
     VERIFICATION_STATUS_CHOICES = (
@@ -203,7 +205,31 @@ class Seller(models.Model):
     
     def can_publish_products(self):
         """Check if seller can publish products (must be fully verified)."""
-        return self.verified and self.verification_status == 'VERIFIED'
+        return (self.verified and self.verification_status == 'VERIFIED'
+                and self.user.is_account_verified() and self.payout_account_verified)
+
+    def validate_kyc_readiness(self):
+        """Raise with field-specific gaps before KYC submission or approval."""
+        errors = {}
+        required = {
+            'business_type': self.business_type, 'business_name': self.business_name,
+            'physical_address': self.physical_address, 'primary_location': self.primary_location_id,
+            'payout_method': self.payout_method, 'payout_provider': self.payout_provider,
+            'payout_account_name': self.payout_account_name, 'payout_account_number': self.payout_account_number,
+            'tax_pin': self.tax_pin,
+        }
+        for field, value in required.items():
+            if not value: errors[field] = 'Required for seller verification.'
+        if self.business_type in {'PARTNERSHIP', 'COMPANY'} and not self.business_registration_number:
+            errors['business_registration_number'] = 'Required for registered businesses.'
+        if not self.user.is_account_verified():
+            errors['contact_verification'] = 'Verify both phone number and email before seller KYC.'
+        if self.payout_method == 'MOBILE_MONEY' and self.payout_provider == 'BANK':
+            errors['payout_provider'] = 'Choose a mobile-money provider.'
+        if self.payout_method == 'BANK' and self.payout_provider != 'BANK':
+            errors['payout_provider'] = 'Bank payout method requires BANK provider.'
+        if errors: raise ValidationError(errors)
+        return True
     
     def get_completion_percentage(self):
         """Calculate profile completion percentage for better UX."""
@@ -269,6 +295,7 @@ class SellerVerification(models.Model):
     )
     government_id_number = models.CharField(
         max_length=50,
+        unique=True,
         help_text='ID number (encrypted in production)'
     )
     government_id_front = models.ImageField(
@@ -283,7 +310,7 @@ class SellerVerification(models.Model):
         upload_to='kyc/selfies/',
         null=True,
         blank=True,
-        help_text='Selfie holding ID (optional, for advanced fraud prevention)'
+        help_text='Selfie holding ID required for seller identity matching'
     )
     
     # Review Information
@@ -324,9 +351,10 @@ class SellerVerification(models.Model):
 
     def submit_for_review(self):
         """Mark the KYC packet as submitted and update seller verification state."""
-        required_fields = [self.government_id_type, self.government_id_number, self.government_id_front, self.government_id_back]
+        self.seller.validate_kyc_readiness()
+        required_fields = [self.government_id_type, self.government_id_number, self.government_id_front, self.government_id_back, self.selfie_with_id]
         if not all(required_fields):
-            raise ValidationError('Government ID type, number, front image, and back image are required before submission.')
+            raise ValidationError('Government ID type, number, both ID images, and selfie with ID are required.')
 
         self.status = 'PENDING'
         self.reviewed_at = None
@@ -344,6 +372,12 @@ class SellerVerification(models.Model):
         from django.utils import timezone
         from apps.notifications.signals import seller_verified as seller_verified_signal
 
+        if not getattr(admin_user, 'is_staff', False):
+            raise ValidationError('Only staff may approve seller KYC.')
+        self.seller.validate_kyc_readiness()
+        if not self.seller.payout_account_verified:
+            raise ValidationError('Confirm payout account ownership before KYC approval.')
+        self.full_clean()
         self.status = 'APPROVED'
         self.reviewed_at = timezone.now()
         self.reviewed_by = admin_user

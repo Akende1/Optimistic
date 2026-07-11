@@ -1,0 +1,1 @@
+.kyc-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}.kyc-grid h2{margin-top:0}.kyc-grid input[type=file]{background:var(--blue)}@media(max-width:900px){.kyc-grid{grid-template-columns:1fr}}

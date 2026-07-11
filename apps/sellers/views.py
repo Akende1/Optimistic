@@ -88,6 +88,30 @@ class SellerViewSet(viewsets.ModelViewSet):
 
         serializer = SellerSerializer(seller, context={'request': request})
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get', 'post'], permission_classes=[IsAuthenticated])
+    def payout_requests(self, request):
+        """List or create manual MVP withdrawal requests for the current seller."""
+        from apps.finances.models import SellerPayoutRequest
+        seller = get_user_seller(request.user)
+        if seller is None or not seller.verified:
+            return Response({'error': 'Verified seller account required.'}, status=status.HTTP_403_FORBIDDEN)
+        if request.method == 'GET':
+            rows = seller.payout_requests.order_by('-requested_at').values(
+                'id', 'amount', 'provider', 'status', 'requested_at', 'processed_at', 'provider_reference'
+            )
+            return Response(list(rows))
+        payout = SellerPayoutRequest(
+            seller=seller, amount=request.data.get('amount'), provider=seller.payout_provider,
+            account_name=seller.payout_account_name, account_number=seller.payout_account_number,
+        )
+        try:
+            payout.full_clean()
+            payout.save()
+        except Exception as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'id': payout.id, 'amount': payout.amount, 'provider': payout.provider,
+                         'status': payout.status}, status=status.HTTP_201_CREATED)
     
     @action(detail=False, methods=['patch'], parser_classes=[MultiPartParser, FormParser])
     def update_profile(self, request):
@@ -229,6 +253,11 @@ def submit_seller_verification(request):
 
     if seller.verified and seller.verification_status == 'VERIFIED':
         return Response({'error': 'Seller is already verified.'}, status=status.HTTP_400_BAD_REQUEST)
+    from apps.common.legal import has_current_acceptance, record_acceptance
+    if str(request.data.get('accepts_seller_terms', '')).lower() in {'true', '1', 'yes'}:
+        record_acceptance(user=request.user, document='SELLER_TERMS', request=request)
+    if not has_current_acceptance(request.user, 'SELLER_TERMS'):
+        return Response({'error': 'Accept the current Seller Marketplace Terms before KYC submission.'}, status=status.HTTP_400_BAD_REQUEST)
 
     verification = getattr(seller, 'kyc_documents', None)
     serializer = SellerVerificationSerializer(

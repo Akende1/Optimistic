@@ -1,5 +1,28 @@
 from rest_framework import serializers
-from .models import Delivery, DeliveryPartner, ZambianLocation
+from .models import Delivery, DeliveryPartner, ZambianLocation, DeliveryEvent, ReturnRequest, ReturnLine
+
+
+class ReturnLineSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReturnLine
+        fields = ['id', 'order_item', 'quantity', 'condition', 'inspection_notes']
+        read_only_fields = ['id', 'condition', 'inspection_notes']
+
+
+class ReturnRequestSerializer(serializers.ModelSerializer):
+    lines = ReturnLineSerializer(many=True)
+
+    class Meta:
+        model = ReturnRequest
+        fields = ['id', 'order', 'requested_by', 'status', 'reason', 'return_by', 'lines', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'requested_by', 'status', 'return_by', 'created_at', 'updated_at']
+
+
+class DeliveryEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeliveryEvent
+        fields = ['id', 'source', 'external_event_id', 'status', 'location', 'description', 'occurred_at', 'received_at']
+        read_only_fields = fields
 
 
 class DeliveryPartnerSerializer(serializers.ModelSerializer):
@@ -87,12 +110,13 @@ class DeliverySerializer(serializers.ModelSerializer):
     """
     partner_name = serializers.CharField(source='partner.name', read_only=True)
     order_id = serializers.IntegerField(source='order.id', read_only=True)
+    events = DeliveryEventSerializer(many=True, read_only=True)
 
     class Meta:
         model = Delivery
         fields = [
             'id', 'order', 'order_id', 'partner', 'partner_name',
             'pickup_address', 'delivery_address', 'delivery_fee',
-            'status', 'notes', 'created_at', 'delivered_at'
+            'status', 'notes', 'created_at', 'delivered_at', 'events'
         ]
         read_only_fields = ['id', 'created_at', 'delivered_at']

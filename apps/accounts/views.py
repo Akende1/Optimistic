@@ -120,7 +120,7 @@ def register(request):
     Register a new user.
     POST /api/auth/register/
     """
-    serializer = UserSerializer(data=request.data)
+    serializer = UserSerializer(data=request.data, context={'request': request})
     if serializer.is_valid():
         user = serializer.save()
         refresh = RefreshToken.for_user(user)

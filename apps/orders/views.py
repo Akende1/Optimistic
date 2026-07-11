@@ -5,10 +5,20 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.filters import OrderingFilter, SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from django.core.exceptions import ValidationError
-from .models import Order
-from .serializers import OrderSerializer, OrderCreateSerializer
+from .models import Order, OrderFulfillment
+from .serializers import OrderSerializer, OrderCreateSerializer, PaymentAttemptSerializer, OrderFulfillmentSerializer, OrderItemSerializer
+from .services import create_payment_attempt, transition_fulfillment
+from .services import record_verified_payment_event
+from .services import simulate_payment_event
+from .services import cancel_order_line
+from .models import OrderItem
+from django.conf import settings
+from .models import PaymentAttempt
+from .payments import get_adapter
+from rest_framework.permissions import AllowAny
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from apps.common.api import get_user_seller
-from apps.common.permissions import IsBuyer
+from apps.common.permissions import IsBuyer, IsVerifiedAccount
 
 
 class OrderViewSet(viewsets.ModelViewSet):
@@ -43,6 +53,25 @@ class OrderViewSet(viewsets.ModelViewSet):
     ordering_fields = ['created_at', 'total_amount', 'status']
     ordering = ['-created_at']  # Default: newest first
     search_fields = ['id', 'buyer__username', 'po_number', 'company_name']
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return OrderCreateSerializer
+        return OrderSerializer
+
+    @action(detail=False, methods=['post'], url_path='delivery-quote')
+    def delivery_quote(self, request):
+        """Return the authoritative optional-leg delivery quote used by checkout."""
+        from .delivery import quote_delivery
+        try:
+            quote = quote_delivery(
+                zone_id=request.data.get('delivery_zone_id'),
+                origin_pickup_required=bool(request.data.get('origin_pickup_required', False)),
+                destination_delivery_required=bool(request.data.get('destination_delivery_required', False)),
+            )
+        except ValidationError as exc:
+            raise DRFValidationError(exc.messages)
+        return Response({key: str(value) if hasattr(value, 'as_tuple') else value for key, value in quote.items()})
     
     def get_queryset(self):
         """
@@ -83,7 +112,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         """Role-based permissions for different actions."""
         if self.action == 'create':
-            return [IsBuyer()]
+            return [IsBuyer(), IsVerifiedAccount()]
         return super().get_permissions()
     
     def perform_create(self, serializer):
@@ -114,6 +143,10 @@ class OrderViewSet(viewsets.ModelViewSet):
         - Triggers notification to seller
         """
         order = self.get_object()
+        if not request.user.is_staff:
+            return Response({
+                'error': 'Payment status can only be confirmed by the payment service or an administrator.'
+            }, status=status.HTTP_403_FORBIDDEN)
         
         try:
             order.mark_as_paid()
@@ -181,6 +214,13 @@ class OrderViewSet(viewsets.ModelViewSet):
         - Triggers notification to buyer
         """
         order = self.get_object()
+        if request.user.role != 'COURIER' and not request.user.is_staff:
+            return Response({
+                'error': 'Only a courier or administrator can mark an order in transit.'
+            }, status=status.HTTP_403_FORBIDDEN)
+        if order.delivery_partner_id and hasattr(order.delivery_partner, 'user_id'):
+            if order.delivery_partner.user_id != request.user.id and not request.user.is_staff:
+                return Response({'error': 'This order is assigned to another courier.'}, status=status.HTTP_403_FORBIDDEN)
         
         try:
             order.mark_in_transit()
@@ -209,16 +249,17 @@ class OrderViewSet(viewsets.ModelViewSet):
         - Triggers notification to seller (payment release)
         """
         order = self.get_object()
-        auto = request.data.get('auto', False)
-        
-        # Verify buyer is confirming their own order
+        # Only trusted server-side jobs/admins may auto-confirm. Never trust a
+        # client-provided flag to bypass ownership.
+        auto = bool(request.data.get('auto', False)) and request.user.is_staff
+
         if not auto and order.buyer != request.user:
             return Response({
                 'error': 'Can only confirm your own orders.'
             }, status=status.HTTP_403_FORBIDDEN)
         
         try:
-            order.mark_delivered(confirmed_by_buyer=True)
+            order.mark_delivered(confirmed_by_buyer=not auto)
             return Response({
                 'message': 'Order marked as delivered.',
                 'status': order.status,
@@ -317,3 +358,118 @@ class OrderViewSet(viewsets.ModelViewSet):
             return Response({
                 'error': str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'], url_path='payment-attempts')
+    def payment_attempts(self, request, pk=None):
+        """Create a replay-safe payment attempt for a mobile/web checkout."""
+        order = self.get_object()
+        if order.buyer_id != request.user.id:
+            return Response({'error': 'Can only pay for your own order.'}, status=status.HTTP_403_FORBIDDEN)
+        key = request.headers.get('Idempotency-Key')
+        if not key:
+            raise DRFValidationError({'idempotency_key': 'Idempotency-Key header is required.'})
+        provider = request.data.get('provider', 'MOBILE_MONEY')
+        try:
+            attempt, created = create_payment_attempt(order=order, provider=provider, idempotency_key=key)
+        except ValidationError as exc:
+            raise DRFValidationError(exc.messages)
+        return Response(PaymentAttemptSerializer(attempt).data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='simulate-payment')
+    def simulate_payment(self, request, pk=None):
+        """Development-only payment completion using the production event service."""
+        if not settings.PAYMENT_SIMULATION_ENABLED:
+            return Response({'error': 'Payment simulation is disabled.'}, status=status.HTTP_404_NOT_FOUND)
+        order = self.get_object()
+        if order.buyer_id != request.user.id and not request.user.is_staff:
+            return Response({'error': 'Can only simulate payment for your own order.'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            attempt = PaymentAttempt.objects.get(pk=request.data.get('attempt_id'), order=order)
+        except (PaymentAttempt.DoesNotExist, ValueError, TypeError):
+            raise DRFValidationError({'attempt_id': 'A valid payment attempt for this order is required.'})
+        event_id = request.data.get('event_id') or f'sim-{attempt.id}-{request.data.get("outcome", "CAPTURED").lower()}'
+        try:
+            _, applied = simulate_payment_event(
+                attempt=attempt,
+                outcome=request.data.get('outcome', 'CAPTURED'),
+                external_event_id=event_id,
+            )
+        except ValidationError as exc:
+            raise DRFValidationError(exc.messages)
+        attempt.refresh_from_db()
+        order.refresh_from_db()
+        return Response({
+            'applied': applied,
+            'payment': PaymentAttemptSerializer(attempt).data,
+            'order': OrderSerializer(order, context={'request': request}).data,
+        })
+
+    @action(detail=True, methods=['post'], url_path='cancel-line')
+    def cancel_line(self, request, pk=None):
+        order = self.get_object()
+        try:
+            item = order.items.get(pk=request.data.get('item_id'))
+            quantity = int(request.data.get('quantity', 0))
+            item = cancel_order_line(order_item=item, actor=request.user, quantity=quantity,
+                                     reason=request.data.get('reason', ''))
+        except OrderItem.DoesNotExist:
+            raise DRFValidationError({'item_id': 'Order line was not found.'})
+        except (ValueError, TypeError):
+            raise DRFValidationError({'quantity': 'A positive integer is required.'})
+        except ValidationError as exc:
+            raise DRFValidationError(exc.messages)
+        return Response(OrderItemSerializer(item, context={'request': request}).data)
+
+    @action(detail=True, methods=['post'], url_path='confirm-receipt')
+    def confirm_receipt(self, request, pk=None):
+        """Buyer confirms delivery and completes buyer protection immediately."""
+        order = self.get_object()
+        if order.buyer_id != request.user.id:
+            return Response({'error': 'Can only confirm your own order.'}, status=status.HTTP_403_FORBIDDEN)
+        if order.status == 'IN_TRANSIT':
+            order.mark_delivered(confirmed_by_buyer=True)
+        order.complete()
+        return Response(OrderSerializer(order, context={'request': request}).data)
+
+
+class OrderFulfillmentViewSet(viewsets.ReadOnlyModelViewSet):
+    """Seller-scoped fulfillment commands used by web and mobile clients."""
+    serializer_class = OrderFulfillmentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return OrderFulfillment.objects.select_related('order', 'seller')
+        seller = get_user_seller(self.request.user)
+        return OrderFulfillment.objects.filter(seller=seller).select_related('order', 'seller') if seller else OrderFulfillment.objects.none()
+
+    @action(detail=True, methods=['post'])
+    def transition(self, request, pk=None):
+        fulfillment = self.get_object()
+        seller = get_user_seller(request.user)
+        if not seller:
+            return Response({'error': 'Seller account required.'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            fulfillment = transition_fulfillment(
+                fulfillment=fulfillment, seller=seller,
+                new_status=request.data.get('status', ''),
+                carrier=request.data.get('carrier', ''),
+                tracking_number=request.data.get('tracking_number', ''),
+            )
+        except ValidationError as exc:
+            raise DRFValidationError(exc.messages)
+        return Response(self.get_serializer(fulfillment).data)
+
+
+from rest_framework.decorators import api_view, permission_classes
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def payment_webhook(request, provider):
+    """Receive a signed provider callback; signature is checked over raw bytes."""
+    try:
+        normalized = get_adapter(provider).verify_and_normalize(request)
+        event, applied = record_verified_payment_event(provider=provider.upper(), **normalized)
+        return Response({'accepted': True, 'applied': applied, 'event_id': event.id})
+    except (ValidationError, KeyError) as exc:
+        return Response({'error': '; '.join(getattr(exc, 'messages', [str(exc)]))}, status=status.HTTP_400_BAD_REQUEST)

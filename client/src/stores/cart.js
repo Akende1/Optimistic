@@ -1,0 +1,2 @@
+import {create} from 'zustand';import{persist}from'zustand/middleware';
+export const useCart=create(persist((set)=>({lines:[],add:(line)=>set(s=>({lines:[...s.lines.filter(x=>x.product!==line.product),line]})),remove:(id)=>set(s=>({lines:s.lines.filter(x=>x.product!==id)})),setQuantity:(id,quantity)=>set(s=>({lines:s.lines.map(x=>x.product===id?{...x,quantity}:x)})),clear:()=>set({lines:[]})}),{name:'optimistic-cart'}));

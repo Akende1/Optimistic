@@ -121,8 +121,12 @@ class Delivery(models.Model):
         ('ASSIGNED', 'Assigned'),     # Partner assigned, not picked up yet
         ('PICKED_UP', 'Picked Up'),   # Partner has the package
         ('IN_TRANSIT', 'In Transit'), # On the way to buyer
+        ('OUT_FOR_DELIVERY', 'Out for Delivery'),
         ('DELIVERED', 'Delivered'),   # Successfully delivered
         ('FAILED', 'Failed'),         # Delivery attempt failed
+        ('EXCEPTION', 'Delivery Exception'),
+        ('RETURNED', 'Returned'),
+        ('LOST', 'Lost'),
         ('CANCELLED', 'Cancelled'),   # Order cancelled, delivery void
     )
 
@@ -147,7 +151,7 @@ class Delivery(models.Model):
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
 
     # Status tracking
-    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='REQUESTED')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='REQUESTED')
     notes = models.TextField(blank=True)
 
     # Timestamps
@@ -163,6 +167,92 @@ class Delivery(models.Model):
 
     def __str__(self):
         return f"Delivery for Order #{self.order.id} - {self.get_status_display()}"
+
+
+class DeliveryEvent(models.Model):
+    """Append-only, deduplicated carrier/courier tracking event."""
+    delivery = models.ForeignKey(Delivery, on_delete=models.CASCADE, related_name='events')
+    external_event_id = models.CharField(max_length=150)
+    source = models.CharField(max_length=40)
+    status = models.CharField(max_length=20, choices=Delivery.STATUS_CHOICES)
+    location = models.CharField(max_length=200, blank=True)
+    description = models.TextField(blank=True)
+    occurred_at = models.DateTimeField()
+    received_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['occurred_at', 'id']
+        constraints = [models.UniqueConstraint(fields=['source', 'external_event_id'], name='unique_delivery_source_event')]
+
+
+class ShippingRate(models.Model):
+    """Versioned rate used to quote package delivery by chargeable weight."""
+    service_code = models.CharField(max_length=40)
+    shipping_class = models.CharField(max_length=30, default='STANDARD')
+    base_fee = models.DecimalField(max_digits=10, decimal_places=2)
+    per_kg_fee = models.DecimalField(max_digits=10, decimal_places=2)
+    dimensional_divisor = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal('5000.00'))
+    effective_from = models.DateTimeField(default=timezone.now)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-effective_from']
+
+
+class Package(models.Model):
+    """Immutable-at-handover physical parcel for one seller fulfillment."""
+    fulfillment = models.ForeignKey('orders.OrderFulfillment', on_delete=models.PROTECT, related_name='packages')
+    shipping_rate = models.ForeignKey(ShippingRate, on_delete=models.PROTECT, related_name='packages')
+    weight_kg = models.DecimalField(max_digits=8, decimal_places=3)
+    dimensional_weight_kg = models.DecimalField(max_digits=8, decimal_places=3)
+    chargeable_weight_kg = models.DecimalField(max_digits=8, decimal_places=3)
+    length_cm = models.DecimalField(max_digits=8, decimal_places=2)
+    width_cm = models.DecimalField(max_digits=8, decimal_places=2)
+    height_cm = models.DecimalField(max_digits=8, decimal_places=2)
+    quoted_fee = models.DecimalField(max_digits=10, decimal_places=2)
+    declared_value = models.DecimalField(max_digits=12, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class CustodyEvent(models.Model):
+    """Append-only proof of a physical package transfer between parties."""
+    EVENT_CHOICES = (('SELLER_RELEASED', 'Seller Released'), ('COURIER_RECEIVED', 'Courier Received'), ('BUS_OPERATOR_RECEIVED', 'Bus Operator Received'), ('DESTINATION_ARRIVED', 'Destination Arrived'), ('BUYER_RECEIVED', 'Buyer Received'))
+    package = models.ForeignKey(Package, on_delete=models.PROTECT, related_name='custody_events')
+    event_type = models.CharField(max_length=30, choices=EVENT_CHOICES)
+    external_reference = models.CharField(max_length=150, unique=True)
+    releasing_party = models.CharField(max_length=150)
+    receiving_party = models.CharField(max_length=150)
+    location = models.CharField(max_length=200)
+    waybill_number = models.CharField(max_length=100, blank=True)
+    seal_identifier = models.CharField(max_length=100, blank=True)
+    verification_method = models.CharField(max_length=30, default='OTP')
+    recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='recorded_custody_events')
+    occurred_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class ReturnRequest(models.Model):
+    """Reverse-logistics aggregate; financial outcomes are delegated to finance services."""
+    STATUS_CHOICES = (('REQUESTED', 'Requested'), ('APPROVED', 'Approved'), ('REJECTED', 'Rejected'), ('COURIER_ASSIGNED', 'Courier Assigned'), ('PICKED_UP', 'Picked Up'), ('IN_TRANSIT', 'In Transit'), ('SELLER_RECEIVED', 'Seller Received'), ('CONDITION_VERIFIED', 'Condition Verified'), ('REFUND_AUTHORIZED', 'Refund Authorized'), ('CLOSED', 'Closed'))
+    order = models.ForeignKey('orders.Order', on_delete=models.PROTECT, related_name='returns')
+    requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='return_requests')
+    status = models.CharField(max_length=24, choices=STATUS_CHOICES, default='REQUESTED', db_index=True)
+    reason = models.TextField()
+    return_by = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class ReturnLine(models.Model):
+    CONDITION_CHOICES = (('UNOPENED', 'Unopened'), ('RESALEABLE', 'Resaleable'), ('DAMAGED', 'Damaged'), ('MISSING', 'Missing'))
+    return_request = models.ForeignKey(ReturnRequest, on_delete=models.PROTECT, related_name='lines')
+    order_item = models.ForeignKey('orders.OrderItem', on_delete=models.PROTECT, related_name='return_lines')
+    quantity = models.PositiveIntegerField()
+    condition = models.CharField(max_length=15, choices=CONDITION_CHOICES, blank=True)
+    inspection_notes = models.TextField(blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['return_request', 'order_item'], name='unique_return_request_line')]
 
 
 class ZambianLocation(models.Model):

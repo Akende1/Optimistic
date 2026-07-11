@@ -72,12 +72,14 @@ class ProductSerializer(SchemaDriftMixin, serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     seller_name = serializers.CharField(source='seller.store_name', read_only=True)
     attributes = serializers.JSONField(required=False)
+    available_stock = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Product
         fields = [
             'id', 'seller', 'seller_name', 'category', 'category_name',
-            'name', 'description', 'price', 'stock', 'attributes', 'status',
+            'name', 'description', 'price', 'stock', 'available_stock', 'attributes', 'status',
+            'weight_kg', 'length_cm', 'width_cm', 'height_cm', 'shipping_class', 'tax_category',
             'images', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'seller', 'status', 'created_at', 'updated_at']
@@ -110,7 +112,8 @@ class ProductCreateSerializer(SchemaDriftMixin, serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'category', 'name', 'description', 'price', 'stock', 'attributes']
+        fields = ['id', 'category', 'name', 'description', 'price', 'stock', 'attributes',
+                  'weight_kg', 'length_cm', 'width_cm', 'height_cm', 'shipping_class', 'tax_category']
         read_only_fields = ['id']
 
     def validate(self, attrs):
