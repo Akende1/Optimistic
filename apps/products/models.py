@@ -291,10 +291,12 @@ class ProductImage(models.Model):
     )
     image = models.ImageField(upload_to='products/')
     is_primary = models.BooleanField(default=False)
+    position = models.PositiveSmallIntegerField(default=0, db_index=True)
 
     class Meta:
         verbose_name = 'Product Image'
         verbose_name_plural = 'Product Images'
+        ordering = ['position', 'id']
     
     def clean(self):
         """Validate max images per product before saving."""

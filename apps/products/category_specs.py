@@ -52,6 +52,14 @@ CATEGORY_ATTRIBUTE_SCHEMAS = {
             'required': False,
             'min': 0,
         },
+        {'key':'processor','label':'Processor / Chipset','type':'text','required':False},
+        {'key':'operating_system','label':'Operating System','type':'text','required':False},
+        {'key':'screen_size_inches','label':'Screen Size (inches)','type':'number','required':False,'min':1},
+        {'key':'battery_capacity_mah','label':'Battery Capacity (mAh)','type':'number','required':False,'min':1},
+        {'key':'camera','label':'Camera Specification','type':'text','required':False},
+        {'key':'connectivity','label':'Connectivity (4G, 5G, Wi-Fi, Bluetooth)','type':'text','required':False},
+        {'key':'color','label':'Color','type':'text','required':False},
+        {'key':'included_accessories','label':'Included Accessories','type':'text','required':False},
     ],
     'fashion': [
         {
@@ -126,6 +134,47 @@ CATEGORY_ATTRIBUTE_SCHEMAS = {
             'required': False,
         },
     ],
+    'vehicle-parts': [
+        {'key':'part_type','label':'Part Type','type':'text','required':True},
+        {'key':'brand','label':'Brand / Manufacturer','type':'text','required':True},
+        {'key':'part_number','label':'Part Number','type':'text','required':False},
+        {'key':'compatible_makes','label':'Compatible Vehicle Makes','type':'text','required':True},
+        {'key':'compatible_models','label':'Compatible Models','type':'text','required':True},
+        {'key':'year_range','label':'Compatible Year Range','type':'text','required':False},
+        {'key':'condition','label':'Condition','type':'select','required':True,'options':['New','Used','Refurbished']},
+    ],
+    'appliances': [
+        {'key':'appliance_type','label':'Appliance Type','type':'text','required':True},
+        {'key':'brand','label':'Brand','type':'text','required':True},
+        {'key':'model','label':'Model','type':'text','required':True},
+        {'key':'power_watts','label':'Power (Watts)','type':'number','required':False,'min':1},
+        {'key':'voltage','label':'Voltage','type':'text','required':False},
+        {'key':'energy_rating','label':'Energy Rating','type':'text','required':False},
+        {'key':'warranty_months','label':'Warranty (Months)','type':'number','required':False,'min':0},
+    ],
+    'beauty': [
+        {'key':'brand','label':'Brand','type':'text','required':True},
+        {'key':'product_type','label':'Product Type','type':'text','required':True},
+        {'key':'size_or_volume','label':'Size / Volume','type':'text','required':True},
+        {'key':'ingredients','label':'Key Ingredients','type':'text','required':False},
+        {'key':'skin_or_hair_type','label':'Skin / Hair Type','type':'text','required':False},
+        {'key':'expiry_date','label':'Expiry Date','type':'date','required':True},
+    ],
+    'books': [
+        {'key':'author','label':'Author','type':'text','required':True},
+        {'key':'isbn','label':'ISBN','type':'text','required':False},
+        {'key':'format','label':'Format','type':'select','required':True,'options':['Paperback','Hardcover','Digital']},
+        {'key':'language','label':'Language','type':'text','required':True},
+        {'key':'publication_year','label':'Publication Year','type':'number','required':False,'min':1000},
+        {'key':'condition','label':'Condition','type':'select','required':True,'options':['New','Like New','Used']},
+    ],
+    'sports': [
+        {'key':'sport','label':'Sport / Activity','type':'text','required':True},
+        {'key':'brand','label':'Brand','type':'text','required':False},
+        {'key':'size','label':'Size','type':'text','required':False},
+        {'key':'material','label':'Material','type':'text','required':False},
+        {'key':'condition','label':'Condition','type':'select','required':True,'options':['New','Used']},
+    ],
 }
 
 
@@ -141,6 +190,12 @@ def get_category_attribute_schema(category):
 
     if 'home' in name or 'garden' in name:
         return CATEGORY_ATTRIBUTE_SCHEMAS.get('home-garden', [])
+    if any(word in name for word in ['gadget','electronic','phone','computer']):
+        return CATEGORY_ATTRIBUTE_SCHEMAS['electronics']
+    if any(word in name for word in ['car','vehicle','auto','motor part']):
+        return CATEGORY_ATTRIBUTE_SCHEMAS['vehicle-parts']
+    if 'appliance' in name:
+        return CATEGORY_ATTRIBUTE_SCHEMAS['appliances']
 
     return CATEGORY_ATTRIBUTE_SCHEMAS.get(name, [])
 

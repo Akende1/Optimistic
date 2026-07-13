@@ -323,6 +323,7 @@ class AccountVerificationCode(models.Model):
     )
     PURPOSE_CHOICES = (
         ('ACCOUNT_VERIFICATION', 'Account Verification'),
+        ('PASSWORD_RESET', 'Password Reset'),
     )
 
     user = models.ForeignKey(

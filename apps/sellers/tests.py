@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
+from rest_framework.test import APIClient
 from apps.logistics.models import ZambianLocation
 from .models import Seller, SellerVerification
 
@@ -34,3 +35,20 @@ class SellerKycTests(TestCase):
         serializer.save();self.seller.refresh_from_db()
         self.assertFalse(self.seller.verified)
         self.assertFalse(self.seller.payout_account_verified)
+
+    def test_analytics_is_seller_scoped_and_has_mobile_ready_contract(self):
+        client = APIClient()
+        client.force_authenticate(self.user)
+        response = client.get('/api/v1/sellers/analytics/?days=30')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data['period']['days'], 30)
+        self.assertEqual(response.data['sales']['net'], '0.00')
+        self.assertEqual(response.data['products']['total'], 0)
+        self.assertIn('balances', response.data)
+        self.assertIn('trend', response.data)
+
+    def test_analytics_rejects_invalid_period(self):
+        client = APIClient()
+        client.force_authenticate(self.user)
+        response = client.get('/api/v1/sellers/analytics/?days=month')
+        self.assertEqual(response.status_code, 400)

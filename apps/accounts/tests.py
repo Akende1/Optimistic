@@ -2,6 +2,8 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 from django.contrib.auth import get_user_model
 from apps.sellers.models import Seller
+from apps.common.models import LegalAcceptance
+from .models import AccountVerificationCode
 
 
 User = get_user_model()
@@ -19,6 +21,8 @@ class AuthFlowTests(TestCase):
             'password': 'StrongPass123',
             'confirm_password': 'StrongPass123',
             'role': 'BUYER',
+            'accepts_terms': True,
+            'accepts_privacy': True,
         }
 
         response = self.client.post('/api/auth/register/', payload, format='json')
@@ -28,6 +32,17 @@ class AuthFlowTests(TestCase):
         self.assertIn('refresh', response.data)
         self.assertEqual(response.data['user']['role'], 'BUYER')
         self.assertTrue(User.objects.filter(email='buyer@example.com').exists())
+        user = User.objects.get(email='buyer@example.com')
+        self.assertEqual(LegalAcceptance.objects.filter(user=user).count(), 2)
+
+    def test_registration_requires_current_legal_acceptance(self):
+        response = self.client.post('/api/auth/register/', {
+            'full_name':'No Consent','phone_number':'+260971000099','email':'no@example.com',
+            'password':'StrongPass123','confirm_password':'StrongPass123','role':'BUYER',
+            'accepts_terms':False,'accepts_privacy':False,
+        }, format='json')
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(User.objects.filter(email='no@example.com').exists())
 
     def test_register_seller_creates_seller_profile_and_login_redirects(self):
         register_payload = {
@@ -39,6 +54,8 @@ class AuthFlowTests(TestCase):
             'role': 'SELLER',
             'seller_type': 'INDIVIDUAL',
             'shop_name': 'Seller Store',
+            'accepts_terms': True,
+            'accepts_privacy': True,
         }
 
         register_response = self.client.post('/api/auth/register/', register_payload, format='json')
@@ -73,3 +90,23 @@ class AuthFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['redirect'], '/buyer-dashboard.html')
         self.assertEqual(response.data['user']['id'], user.id)
+
+
+class PasswordResetTests(TestCase):
+    def test_reset_request_and_confirm_changes_password(self):
+        user = User.objects.create_user(username='reset-user', email='reset@example.com', password='old-password')
+        client = APIClient()
+        request = client.post('/api/v1/auth/password-reset/request/', {'email': user.email}, format='json')
+        self.assertEqual(request.status_code, 200)
+        challenge = AccountVerificationCode.objects.get(user=user, purpose='PASSWORD_RESET')
+        confirm = client.post('/api/v1/auth/password-reset/confirm/', {
+            'email': user.email, 'code': challenge.code, 'new_password': 'new-password-123'
+        }, format='json')
+        self.assertEqual(confirm.status_code, 200, confirm.data)
+        user.refresh_from_db()
+        self.assertTrue(user.check_password('new-password-123'))
+
+    def test_unknown_email_does_not_disclose_account_existence(self):
+        response = APIClient().post('/api/v1/auth/password-reset/request/', {'email': 'missing@example.com'}, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('debug_code', response.data)

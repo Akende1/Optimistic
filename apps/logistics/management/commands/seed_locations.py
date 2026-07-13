@@ -40,7 +40,7 @@ class Command(BaseCommand):
             )
             provinces[name] = province
 
-        self.stdout.write(self.style.SUCCESS(f'✓ Created {len(provinces)} provinces'))
+        self.stdout.write(self.style.SUCCESS(f'Created {len(provinces)} provinces'))
 
         # Create Cities
         self.stdout.write('Creating cities...')
@@ -92,7 +92,7 @@ class Command(BaseCommand):
             )
             cities[city_name] = city
 
-        self.stdout.write(self.style.SUCCESS(f'✓ Created {len(cities)} cities'))
+        self.stdout.write(self.style.SUCCESS(f'Created {len(cities)} cities'))
 
         # Create Zones (focusing on Lusaka for now)
         self.stdout.write('Creating zones...')
@@ -174,13 +174,13 @@ class Command(BaseCommand):
             if created:
                 zones_created += 1
 
-        self.stdout.write(self.style.SUCCESS(f'✓ Created {zones_created} zones'))
+        self.stdout.write(self.style.SUCCESS(f'Created {zones_created} zones'))
 
         # Summary
         self.stdout.write(self.style.SUCCESS('\n' + '='*50))
-        self.stdout.write(self.style.SUCCESS('✅ LOCATION SEEDING COMPLETE!'))
+        self.stdout.write(self.style.SUCCESS('LOCATION SEEDING COMPLETE!'))
         self.stdout.write(self.style.SUCCESS('='*50))
-        self.stdout.write(f'📍 Total Locations: {ZambianLocation.objects.count()}')
+        self.stdout.write(f'Total Locations: {ZambianLocation.objects.count()}')
         self.stdout.write(f'   - Provinces: {ZambianLocation.objects.filter(location_type="PROVINCE").count()}')
         self.stdout.write(f'   - Cities: {ZambianLocation.objects.filter(location_type="CITY").count()}')
         self.stdout.write(f'   - Zones: {ZambianLocation.objects.filter(location_type="ZONE").count()}')

@@ -13,7 +13,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-development-key-change-this')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=True, cast=bool)
+def parse_debug_mode(value):
+    """Accept booleans plus common deployment-mode names without startup crashes."""
+    normalized = str(value).strip().lower()
+    if normalized in {'1', 'true', 'yes', 'on', 'development', 'debug'}:
+        return True
+    if normalized in {'0', 'false', 'no', 'off', 'production', 'prod', 'release'}:
+        return False
+    raise ValueError('DEBUG must be a boolean or a recognised environment mode.')
+
+
+DEBUG = config('DEBUG', default=True, cast=parse_debug_mode)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
 

@@ -52,6 +52,14 @@ class DeliveryViewSet(viewsets.ReadOnlyModelViewSet):
         new_status = request.data.get('status')
         if new_status not in dict(Delivery.STATUS_CHOICES):
             return Response({'status': 'Invalid delivery status.'}, status=status.HTTP_400_BAD_REQUEST)
+        transitions = {
+            'REQUESTED': {'ASSIGNED', 'CANCELLED'}, 'ASSIGNED': {'PICKED_UP', 'EXCEPTION', 'CANCELLED'},
+            'PICKED_UP': {'IN_TRANSIT', 'EXCEPTION'}, 'IN_TRANSIT': {'OUT_FOR_DELIVERY', 'EXCEPTION'},
+            'OUT_FOR_DELIVERY': {'DELIVERED', 'FAILED', 'EXCEPTION'},
+            'FAILED': {'OUT_FOR_DELIVERY', 'RETURNED'}, 'EXCEPTION': {'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'RETURNED', 'LOST'},
+        }
+        if new_status not in transitions.get(delivery.status, set()):
+            return Response({'error': f'Invalid delivery transition {delivery.status} -> {new_status}.'}, status=status.HTTP_409_CONFLICT)
         with transaction.atomic():
             event, created = DeliveryEvent.objects.get_or_create(
                 source=request.data.get('source', 'COURIER'),
@@ -61,11 +69,13 @@ class DeliveryViewSet(viewsets.ReadOnlyModelViewSet):
             )
             if created:
                 delivery.status = new_status
+                if new_status == 'PICKED_UP':
+                    delivery.picked_up_at = event.occurred_at
                 if new_status == 'DELIVERED':
                     delivery.delivered_at = event.occurred_at
                     if delivery.order.status == 'IN_TRANSIT':
                         delivery.order.mark_delivered(confirmed_by_buyer=False)
-                delivery.save(update_fields=['status', 'delivered_at'])
+                delivery.save(update_fields=['status', 'picked_up_at', 'delivered_at'])
                 from apps.common.outbox import enqueue
                 enqueue(
                     topic='notification.order_status', aggregate_type='Delivery', aggregate_id=delivery.id,
@@ -206,6 +216,37 @@ class ZambianLocationViewSet(viewsets.ModelViewSet):
         )
         serializer = self.get_serializer(provinces, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get', 'patch'], permission_classes=[IsAuthenticated])
+    def me(self, request):
+        try:
+            partner = DeliveryPartner.objects.get(user=request.user)
+        except DeliveryPartner.DoesNotExist:
+            return Response({'error': 'Courier profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if request.method == 'PATCH':
+            serializer = self.get_serializer(partner, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+        return Response(self.get_serializer(partner).data)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def earnings(self, request):
+        try:
+            partner = DeliveryPartner.objects.get(user=request.user)
+        except DeliveryPartner.DoesNotExist:
+            return Response({'error': 'Courier profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+        wallet = getattr(partner, 'wallet', None)
+        rows = partner.earnings.select_related('delivery').values(
+            'id', 'delivery_id', 'amount', 'status', 'created_at', 'cleared_at', 'paid_at'
+        )
+        return Response({
+            'wallet': {
+                'available': str(wallet.available_balance if wallet else 0),
+                'pending': str(wallet.pending_balance if wallet else 0),
+                'lifetime': str(wallet.lifetime_earnings if wallet else 0),
+            },
+            'results': list(rows),
+        })
 
     @action(detail=False, methods=['get'])
     def cities(self, request):

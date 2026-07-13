@@ -10,7 +10,7 @@ TRANSITIONS = {'REQUESTED': {'APPROVED', 'REJECTED'}, 'APPROVED': {'COURIER_ASSI
 
 @transaction.atomic
 def create_return(*, order, buyer, lines, reason):
-    if order.buyer_id != buyer.id or order.status not in {'DELIVERED', 'DISPUTED'}:
+    if order.buyer_id != buyer.id or order.status not in {'DELIVERED', 'COMPLETED', 'DISPUTED'}:
         raise ValidationError('Return requires the delivered order owner.')
     result = ReturnRequest.objects.create(order=order, requested_by=buyer, reason=reason)
     for item, quantity in lines:

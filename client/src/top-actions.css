@@ -1,0 +1,101 @@
+.nav-actions {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: 7px;
+  min-width: max-content;
+  min-height: 64px;
+  overflow: visible;
+}
+
+.nav-actions .nav-icon {
+  position: relative;
+  flex: 0 0 58px;
+  min-width: 58px;
+  min-height: 58px;
+  padding: 6px 7px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--market-ink);
+  box-shadow: none;
+}
+
+.nav-actions .nav-icon:hover {
+  background: var(--market-blue);
+  color: var(--market-purple);
+  transform: none;
+}
+
+.nav-actions .nav-symbol {
+  font: 500 1.42rem/1 Arial;
+  color: var(--market-purple-deep);
+}
+
+.nav-actions .nav-icon small {
+  font-size: .64rem;
+  line-height: 1.1;
+  font-weight: 750;
+  color: var(--market-muted);
+  white-space: nowrap;
+}
+
+.nav-actions .nav-signup {
+  background: var(--market-yellow);
+  border: 1px solid #e7bd42;
+}
+
+.nav-actions .nav-signup:hover { background: #ffca36; }
+.nav-actions .cart-action { padding-left: 7px; }
+
+.nav-actions .cart-action > .cart-count {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  z-index: 2;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--market-yellow);
+  color: var(--market-purple-deep);
+  font-size: .6rem;
+  font-weight: 900;
+}
+
+.nav-actions .nav-logout { font-family: inherit; }
+
+@media (max-width: 720px) {
+  .nav-actions {
+    width: 100%;
+    min-height: 56px;
+    justify-content: flex-end;
+    gap: 4px;
+    overflow: visible;
+  }
+
+  .nav-actions .nav-icon {
+    flex-basis: 50px;
+    min-width: 50px;
+    min-height: 50px;
+  }
+
+  .nav-actions .nav-icon small { font-size: .59rem; }
+  .nav-actions .nav-symbol { font-size: 1.22rem; }
+  .nav-actions .nav-signup { padding: 4px 6px; }
+}
+
+@media (max-width: 420px) {
+  .nav-actions .nav-login { display: none; }
+  .nav-actions .nav-icon { flex-basis: 46px; min-width: 46px; }
+  .nav-actions .nav-signup { display: flex !important; }
+}

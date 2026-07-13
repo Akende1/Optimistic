@@ -171,9 +171,6 @@ class SellerViewSet(viewsets.ModelViewSet):
         - Total revenue
         - Products by status
         """
-        from apps.products.models import Product
-        from apps.orders.models import Order, OrderItem
-        
         seller = get_user_seller(request.user)
         if seller is None:
             return Response(
@@ -181,46 +178,12 @@ class SellerViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        # Product metrics - ONLY this seller's products
-        products = Product.objects.filter(seller=seller)
-        products_by_status = products.values('status').annotate(count=Count('id'))
-        
-        # Order metrics - ONLY orders with this seller's items
-        seller_orders = Order.objects.filter(items__seller=seller).distinct()
-        
-        # Revenue - ONLY from this seller's items
-        seller_items = OrderItem.objects.filter(seller=seller)
-        total_revenue = seller_items.aggregate(
-            total=Sum('price_snapshot')
-        )['total'] or 0
-        
-        # Orders by status - ONLY orders with this seller's items
-        orders_by_status = seller_orders.values('status').annotate(count=Count('id'))
-        
-        analytics = {
-            'products': {
-                'total': products.count(),
-                'active': products.filter(status='ACTIVE').count(),
-                'draft': products.filter(status='DRAFT').count(),
-                'pending': products.filter(status='PENDING_APPROVAL').count(),
-                'suspended': products.filter(status='SUSPENDED').count(),
-                'by_status': list(products_by_status)
-            },
-            'orders': {
-                'total': seller_orders.count(),
-                'pending': seller_orders.filter(status='PENDING').count(),
-                'paid': seller_orders.filter(status='PAID').count(),
-                'in_transit': seller_orders.filter(status='IN_TRANSIT').count(),
-                'delivered': seller_orders.filter(status='DELIVERED').count(),
-                'by_status': list(orders_by_status)
-            },
-            'revenue': {
-                'total': float(total_revenue),
-                'items_sold': seller_items.count()
-            }
-        }
-        
-        return Response(analytics)
+        from .services.analytics import build_seller_analytics
+        try:
+            days = int(request.query_params.get('days', 30))
+        except (TypeError, ValueError):
+            return Response({'error': 'days must be an integer.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(build_seller_analytics(seller, days=days))
 
 
 @api_view(['GET'])

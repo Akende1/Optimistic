@@ -17,6 +17,8 @@ urlpatterns = [
     path('verification/confirm/', views.confirm_verification_code, name='verification-confirm'),
     path('verification/status/', views.verification_status, name='verification-status'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('password-reset/request/', views.request_password_reset, name='password-reset-request'),
+    path('password-reset/confirm/', views.confirm_password_reset, name='password-reset-confirm'),
     
     # Super Admin endpoints
     path('super-admin/create-admin/', admin_views.create_admin_user, name='create-admin-user'),

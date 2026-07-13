@@ -1,0 +1,5 @@
+import { Link } from 'react-router-dom';
+import { Screen } from '../components/State';
+
+const copy = { forbidden: ['Access denied', 'Your role or verification status does not permit this page.'], session: ['Session expired', 'Sign in again to continue safely.'], offline: ['You are offline', 'Reconnect and retry. Commercial state has not been changed locally.'], maintenance: ['Temporarily unavailable', 'Optimistic is undergoing maintenance. Please retry shortly.'], missing: ['Page not found', 'The requested page does not exist or is no longer available.'], error: ['Something went wrong', 'A safe unexpected error occurred. Reload or return home.'] };
+export default function SystemState({ type = 'missing' }) { const [title, description] = copy[type] || copy.missing; return <Screen eyebrow="OPTIMISTIC" title={title} description={description}><div className="actions"><Link className="cta" to="/">Return home</Link>{type === 'session' && <Link className="button-quiet" to="/login">Sign in</Link>}</div></Screen>; }

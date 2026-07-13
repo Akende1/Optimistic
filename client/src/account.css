@@ -1,0 +1,1 @@
+.account-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}@media(max-width:760px){.account-grid{grid-template-columns:1fr}}

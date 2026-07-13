@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAdminUser
 from rest_framework.parsers import MultiPartParser, FormParser
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Prefetch, Q, Case, When, Value, IntegerField, Count, Min, Max
+from django.db import transaction
 from .models import Category, Product, ProductImage
 from .serializers import (
     CategorySerializer, 
@@ -92,7 +93,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         """
         image_prefetch = Prefetch(
             'images',
-            queryset=ProductImage.objects.only('id', 'image', 'is_primary', 'product_id').order_by('-is_primary', 'id')
+            queryset=ProductImage.objects.only('id', 'image', 'is_primary', 'position', 'product_id').order_by('position', 'id')
         )
         queryset = Product.objects.select_related('seller', 'category').prefetch_related(image_prefetch)
         if not model_field_available(Product, 'attributes'):
@@ -354,6 +355,36 @@ class ProductViewSet(viewsets.ModelViewSet):
                 {'error': 'Image not found'},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+    @action(detail=True, methods=['post'], permission_classes=[IsVerifiedSeller, IsOwnerOrReadOnly])
+    def set_primary_image(self, request, pk=None):
+        product = self.get_object()
+        try:
+            image = ProductImage.objects.get(pk=request.data.get('image_id'), product=product)
+        except ProductImage.DoesNotExist:
+            return Response({'error': 'Image not found.'}, status=status.HTTP_404_NOT_FOUND)
+        with transaction.atomic():
+            product.images.update(is_primary=False)
+            image.is_primary = True
+            image.save(update_fields=['is_primary'])
+        from .serializers import ProductImageSerializer
+        return Response(ProductImageSerializer(product.images.all(), many=True, context={'request': request}).data)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsVerifiedSeller, IsOwnerOrReadOnly])
+    def reorder_images(self, request, pk=None):
+        product = self.get_object()
+        try:
+            image_ids = [int(value) for value in request.data.get('image_ids', [])]
+        except (TypeError, ValueError):
+            return Response({'error': 'image_ids must be an ordered list of integers.'}, status=status.HTTP_400_BAD_REQUEST)
+        existing = list(product.images.values_list('id', flat=True))
+        if len(image_ids) != len(set(image_ids)) or set(image_ids) != set(existing):
+            return Response({'error': 'image_ids must contain every product image exactly once.'}, status=status.HTTP_400_BAD_REQUEST)
+        with transaction.atomic():
+            for position, image_id in enumerate(image_ids):
+                ProductImage.objects.filter(pk=image_id, product=product).update(position=position)
+        from .serializers import ProductImageSerializer
+        return Response(ProductImageSerializer(product.images.all(), many=True, context={'request': request}).data)
 
     @action(detail=False, methods=['get'])
     def facets(self, request):

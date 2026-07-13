@@ -65,6 +65,26 @@ python manage.py makemigrations --check --dry-run
 python manage.py test
 ```
 
+## Local demo data
+
+Seed Zambia provinces, cities, and delivery zones before marketplace data:
+
+```powershell
+python manage.py migrate
+python manage.py seed_locations
+python manage.py seed_demo_data --buyers 30 --sellers 15 --products 150 --orders 300 --seed 260
+```
+
+`seed_demo_data` is a local/test data builder, not a production migration. Its numeric arguments are target sizes for the generated demo cohorts and catalog/order totals. The deterministic seed makes distributions reproducible. Repeated runs reuse named buyer, seller, category, and product records, create only the orders/products needed to reach targets, and backfill legacy itemless demo orders.
+
+The generated graph includes verified buyer/seller contact channels, buyer addresses linked to seeded Zambia zones, active/draft/pending products across categories, orders with immutable price-snapshot lines, one fulfillment per participating seller, reviews, and notifications. This is deliberate: dashboard and mobile tests must exercise real ownership joins rather than unrelated counter rows. Seller analytics should consequently return trends and top products for `techstore`.
+
+Default test identities are `john_buyer / buyer123` and `techstore / seller123`. Administrators are never silently seeded; create one with `python manage.py createsuperuser`. Demo sellers are operational fixtures, not evidence of completed real KYC.
+
+The `--clear` switch is destructive and is restricted to disposable local databases. It removes non-staff demo commerce data in dependency order. Never enable or invoke demo commands in production deployment workflows.
+
+For device testing, bind Django with `python manage.py runserver 0.0.0.0:8000`. Android emulators use `http://10.0.2.2:8000/api/v1`; physical devices use the development computer's LAN address and require that address in local `ALLOWED_HOSTS`. Do not add wildcard hosts to make device testing convenient.
+
 Apply committed migrations with `python manage.py migrate`. Production must configure `DEBUG=False`, a strong secret, allowed hosts/CORS origins, webhook secrets, HTTPS and production database credentials.
 
 ## Role boundaries
@@ -137,6 +157,26 @@ Production requires PostgreSQL, HTTPS, secure secrets, `DEBUG=False`, restricted
 ## Privacy and retention
 
 Privacy exports should gather profile, addresses, orders, reviews, disputes, and notifications into an encrypted, expiring download. Account deletion revokes access and anonymizes removable personal data while retaining pseudonymous order, tax, ledger, audit, and dispute records required for legal or fraud purposes. Evidence under legal hold is not deleted prematurely.
+
+## Legal documents and acceptance
+
+Public React routes expose buyer terms, privacy information, and seller terms at `/legal/terms`, `/legal/privacy`, and `/legal/seller`. Registration requires affirmative, separate acceptance of the current buyer terms and privacy notice. Seller KYC submission additionally requires the current seller terms.
+
+`LegalAcceptance` is an append-only audit record containing the user, document type, published version, content hash, acceptance time, IP address, and user agent. Current versions and hashes are defined centrally in `apps/common/legal.py`; never overwrite historical records when legal text changes. Publish a new version and require fresh acceptance where necessary. The API contract is `GET /api/v1/legal/` and `POST /api/v1/legal/accept/`.
+
+The included legal text is an operational MVP draft, not a substitute for Zambian counsel. Before launch, counsel must verify consumer remedies, data-controller/processor registration and notices, electronic-contract wording, tax treatment, payout obligations, prohibited goods, retention periods, and the named legal entity/contact details.
+
+## Schema-driven seller catalog
+
+Seller product creation is available at `/seller/products`. The category endpoint returns an `attribute_schema`; React renders matching select, number, boolean, and text controls and submits their values as `attributes`. Django remains authoritative: `apps/products/category_specs.py` normalizes aliases, rejects missing required specifications, coerces types, and prevents unsupported keys.
+
+Initial structured schemas cover electronics/gadgets, vehicle parts, appliances, fashion, food, beauty, books, sports, and home/garden. Electronics include device type, brand/model, processor, RAM, storage, operating system, screen, battery, cameras, connectivity, condition, colour, warranty, and included accessories. Base product fields independently capture price, stock, package weight/dimensions, shipping class, tax category, and images. Add category fields through the schema registry rather than branching serializers or React pages per category; this preserves separation of concerns and keeps mobile clients on the same contract.
+
+## Seller analytics
+
+`GET /api/v1/sellers/analytics/?days=30` returns seller-scoped performance for a bounded 7–365 day period. The contract includes gross sales, refunds, net sales, paid-order count, units sold, product and stock health, fulfillment states, escrow balances, daily trend points, and the five leading products. Revenue uses immutable order-line price snapshots, quantity less cancelled quantity, and recorded line refunds; pending, failed, expired, cancelled, and fully refunded orders do not inflate sales.
+
+Aggregation belongs to `apps/sellers/services/analytics.py`, authorization and input handling remain in the seller API view, and visualization belongs to the React seller dashboard. Never move cross-seller reporting into this service or expose raw buyer identity through analytics. At larger volume, preserve the API contract while replacing live aggregation with asynchronously maintained daily seller projections.
 
 ## Frontend map
 

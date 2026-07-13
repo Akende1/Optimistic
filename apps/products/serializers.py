@@ -28,8 +28,8 @@ class ProductImageSerializer(ImageURLMixin, serializers.ModelSerializer):
     
     class Meta:
         model = ProductImage
-        fields = ['id', 'image', 'image_url', 'is_primary']
-        read_only_fields = ['id']
+        fields = ['id', 'image', 'image_url', 'is_primary', 'position']
+        read_only_fields = ['id', 'position']
 
 
 class ProductSerializer(SchemaDriftMixin, serializers.ModelSerializer):
@@ -170,4 +170,4 @@ class ProductImageUploadSerializer(serializers.ModelSerializer):
         if validated_data.get('is_primary', False):
             ProductImage.objects.filter(product=product, is_primary=True).update(is_primary=False)
         
-        return ProductImage.objects.create(product=product, **validated_data)
+        return ProductImage.objects.create(product=product, position=product.images.count(), **validated_data)

@@ -109,6 +109,58 @@ def _issue_verification_code(user, channel):
     return verification
 
 
+def _issue_password_reset_code(user):
+    AccountVerificationCode.objects.filter(
+        user=user, channel='EMAIL', purpose='PASSWORD_RESET', used_at__isnull=True,
+    ).update(expires_at=timezone.now())
+    return AccountVerificationCode.objects.create(
+        user=user, channel='EMAIL', purpose='PASSWORD_RESET',
+        code=f"{secrets.randbelow(1000000):06d}",
+        expires_at=timezone.now() + timedelta(minutes=VERIFICATION_CODE_TTL_MINUTES),
+    )
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def request_password_reset(request):
+    """Issue a short-lived email reset challenge without revealing account existence."""
+    email = str(request.data.get('email', '')).strip().lower()
+    user = User.objects.filter(email__iexact=email, is_active=True).first()
+    challenge = None
+    if user and _increment_cache_counter(f'password-reset:{user.pk}', 3600) <= 6:
+        challenge = _issue_password_reset_code(user)
+        send_mail(
+            subject='Reset your Optimistic password',
+            message=f'Your password reset code is {challenge.code}. It expires in {VERIFICATION_CODE_TTL_MINUTES} minutes.',
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@optimistic.local'),
+            recipient_list=[user.email], fail_silently=True,
+        )
+    response = {'message': 'If that email belongs to an active account, a reset code has been sent.'}
+    if settings.DEBUG and challenge:
+        response['debug_code'] = challenge.code
+    return Response(response)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def confirm_password_reset(request):
+    email = str(request.data.get('email', '')).strip().lower()
+    code = str(request.data.get('code', '')).strip()
+    password = str(request.data.get('new_password', ''))
+    if len(password) < 8:
+        return Response({'new_password': 'Password must contain at least 8 characters.'}, status=status.HTTP_400_BAD_REQUEST)
+    user = User.objects.filter(email__iexact=email, is_active=True).first()
+    challenge = AccountVerificationCode.objects.filter(
+        user=user, channel='EMAIL', purpose='PASSWORD_RESET', code=code,
+    ).order_by('-created_at').first() if user else None
+    if not challenge or not challenge.can_attempt():
+        return Response({'code': 'The reset code is invalid or expired.'}, status=status.HTTP_400_BAD_REQUEST)
+    challenge.mark_used()
+    user.set_password(password)
+    user.save(update_fields=['password'])
+    return Response({'message': 'Password reset successfully. Sign in with the new password.'})
+
+
 def _mark_account_verified_if_ready(user):
     user.refresh_verification_status()
 

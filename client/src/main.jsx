@@ -1,1 +1,25 @@
-import React from'react';import{createRoot}from'react-dom/client';import{QueryClient,QueryClientProvider}from'@tanstack/react-query';import App from'./App';import'./styles.css';import'./delivery.css';import'./kyc.css';import'./legal.css';const queryClient=new QueryClient({defaultOptions:{queries:{staleTime:30000,retry:2,refetchOnWindowFocus:true}}});createRoot(document.getElementById('root')).render(<React.StrictMode><QueryClientProvider client={queryClient}><App/></QueryClientProvider></React.StrictMode>);
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import App from './App';
+import ErrorBoundary from './components/ErrorBoundary';
+import './styles.css';
+import './delivery.css';
+import './kyc.css';
+import './legal.css';
+import './products.css';
+import './analytics.css';
+import './commerce.css';
+import './navigation.css';
+import './portal.css';
+import './polish.css';
+import './responsive.css';
+import './top-actions.css';
+import './brand-logos.css';
+import './workflows.css';
+import './extended.css';
+import './account.css';
+import './discovery.css';
+
+const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30000, retry: 2, refetchOnWindowFocus: true } } });
+createRoot(document.getElementById('root')).render(<React.StrictMode><ErrorBoundary><QueryClientProvider client={queryClient}><App /></QueryClientProvider></ErrorBoundary></React.StrictMode>);

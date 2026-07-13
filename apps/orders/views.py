@@ -359,12 +359,15 @@ class OrderViewSet(viewsets.ModelViewSet):
                 'error': str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['post'], url_path='payment-attempts')
+    @action(detail=True, methods=['get', 'post'], url_path='payment-attempts')
     def payment_attempts(self, request, pk=None):
         """Create a replay-safe payment attempt for a mobile/web checkout."""
         order = self.get_object()
         if order.buyer_id != request.user.id:
             return Response({'error': 'Can only pay for your own order.'}, status=status.HTTP_403_FORBIDDEN)
+        if request.method == 'GET':
+            attempts = order.payment_attempts.order_by('-created_at')
+            return Response(PaymentAttemptSerializer(attempts, many=True).data)
         key = request.headers.get('Idempotency-Key')
         if not key:
             raise DRFValidationError({'idempotency_key': 'Idempotency-Key header is required.'})

@@ -7,10 +7,11 @@ from django.utils import timezone
 from datetime import timedelta
 import random
 from decimal import Decimal
-from apps.accounts.models import User
+from apps.accounts.models import User, BuyerAddress
 from apps.sellers.models import Seller
 from apps.products.models import Category, Product, ProductImage
-from apps.orders.models import Order
+from apps.orders.models import Order, OrderItem, OrderFulfillment
+from apps.logistics.models import ZambianLocation
 from apps.reviews.models import Review
 from apps.notifications.models import Notification
 
@@ -24,17 +25,25 @@ class Command(BaseCommand):
             action='store_true',
             help='Clear existing data before seeding',
         )
+        parser.add_argument('--buyers', type=int, default=30, help='Target number of demo buyers.')
+        parser.add_argument('--sellers', type=int, default=15, help='Target number of demo sellers.')
+        parser.add_argument('--products', type=int, default=150, help='Target number of demo products.')
+        parser.add_argument('--orders', type=int, default=300, help='Target number of demo orders.')
+        parser.add_argument('--seed', type=int, default=260, help='Deterministic random seed.')
 
     def handle(self, *args, **options):
+        random.seed(options['seed'])
         if options['clear']:
             self.stdout.write(self.style.WARNING('Clearing existing data...'))
             # Don't delete admin users
-            User.objects.filter(is_staff=False).delete()
-            Product.objects.all().delete()
-            Order.objects.all().delete()
             Review.objects.all().delete()
             Notification.objects.all().delete()
-            self.stdout.write(self.style.SUCCESS('✓ Data cleared'))
+            OrderFulfillment.objects.all().delete()
+            OrderItem.all_objects.all().delete()
+            Order.objects.all().delete()
+            Product.objects.all().delete()
+            User.objects.filter(is_staff=False).delete()
+            self.stdout.write(self.style.SUCCESS('Data cleared'))
 
         self.stdout.write(self.style.SUCCESS('Starting data seeding...'))
 
@@ -52,7 +61,7 @@ class Command(BaseCommand):
                 defaults={'slug': slug, 'is_active': True}
             )
             categories.append(cat)
-        self.stdout.write(self.style.SUCCESS(f'✓ Created {len(categories)} categories'))
+        self.stdout.write(self.style.SUCCESS(f'Created {len(categories)} categories'))
 
         # Create buyer users
         self.stdout.write('Creating buyers...')
@@ -63,15 +72,41 @@ class Command(BaseCommand):
                 username=username,
                 defaults={
                     'email': f'{username}@example.com',
+                    'phone_number': f'+26097000{i:04d}',
                     'role': 'BUYER',
-                    'is_active': True
+                    'is_active': True,
+                    'phone_verified': True,
+                    'email_verified': True,
                 }
             )
             if created:
                 user.set_password('buyer123')
+            user.phone_verified = True
+            user.email_verified = True
+            user.save()
+            buyers.append(user)
+        self.stdout.write(self.style.SUCCESS(f'Created {len(buyers)} buyers'))
+
+        for i in range(len(buyers) + 1, max(options['buyers'], len(buyers)) + 1):
+            username = f'demo_buyer_{i:03d}'
+            user, created = User.objects.get_or_create(username=username, defaults={
+                'email': f'{username}@example.com', 'phone_number': f'+260950{i:06d}',
+                'role': 'BUYER', 'is_active': True, 'phone_verified': True, 'email_verified': True,
+            })
+            if created:
+                user.set_password('buyer123')
                 user.save()
             buyers.append(user)
-        self.stdout.write(self.style.SUCCESS(f'✓ Created {len(buyers)} buyers'))
+
+        zones = list(ZambianLocation.objects.filter(location_type='ZONE'))
+        if zones:
+            for index, buyer in enumerate(buyers):
+                zone = zones[index % len(zones)]
+                BuyerAddress.objects.get_or_create(user=buyer, label='Home', defaults={
+                    'street_address': f'Plot {100 + index}, Demo Road', 'location': zone,
+                    'town_city': zone.parent.name if zone.parent else zone.name,
+                    'province': zone.get_full_address(), 'delivery_notes': 'Call on arrival', 'is_default': True,
+                })
 
         # Create seller users
         self.stdout.write('Creating sellers...')
@@ -84,18 +119,23 @@ class Command(BaseCommand):
             ('bookshop', 'Book Shop Zambia', True),
         ]
         
-        for username, store_name, is_verified in seller_data:
+        for seller_index, (username, store_name, is_verified) in enumerate(seller_data, 1):
             user, created = User.objects.get_or_create(
                 username=username,
                 defaults={
                     'email': f'{username}@example.com',
+                    'phone_number': f'+26096000{seller_index:04d}',
                     'role': 'SELLER',
-                    'is_active': True
+                    'is_active': True,
+                    'phone_verified': True,
+                    'email_verified': True,
                 }
             )
             if created:
                 user.set_password('seller123')
-                user.save()
+            user.phone_verified = True
+            user.email_verified = True
+            user.save()
             
             seller, created = Seller.objects.get_or_create(
                 user=user,
@@ -106,7 +146,22 @@ class Command(BaseCommand):
                 }
             )
             sellers.append(seller)
-        self.stdout.write(self.style.SUCCESS(f'✓ Created {len(sellers)} sellers'))
+        self.stdout.write(self.style.SUCCESS(f'Created {len(sellers)} sellers'))
+
+        for i in range(len(sellers) + 1, max(options['sellers'], len(sellers)) + 1):
+            username = f'demo_seller_{i:03d}'
+            user, created = User.objects.get_or_create(username=username, defaults={
+                'email': f'{username}@example.com', 'phone_number': f'+260940{i:06d}',
+                'role': 'SELLER', 'is_active': True, 'phone_verified': True, 'email_verified': True,
+            })
+            if created:
+                user.set_password('seller123')
+                user.save()
+            seller, _ = Seller.objects.get_or_create(user=user, defaults={
+                'store_name': f'Demo Marketplace Store {i}', 'verified': True,
+                'verification_status': 'VERIFIED', 'phone': user.phone_number,
+            })
+            sellers.append(seller)
 
         # Create products
         self.stdout.write('Creating products...')
@@ -163,14 +218,29 @@ class Command(BaseCommand):
                 product.created_at = created_at
                 product.save()
             products.append(product)
-        self.stdout.write(self.style.SUCCESS(f'✓ Created {len(products)} products'))
+        self.stdout.write(self.style.SUCCESS(f'Created {len(products)} products'))
+
+        product_words = ['Premium', 'Classic', 'Smart', 'Everyday', 'Professional', 'Eco', 'Compact', 'Deluxe']
+        while Product.objects.count() < options['products']:
+            index = Product.objects.count() + 1
+            category = categories[index % len(categories)]
+            seller = sellers[index % len(sellers)]
+            name = f'{random.choice(product_words)} {category.name} Item {index:03d}'
+            product, _ = Product.objects.get_or_create(name=name, seller=seller, defaults={
+                'category': category, 'description': f'Demo {category.name.lower()} product for mobile and web testing.',
+                'price': Decimal(random.randrange(50, 25000)), 'stock': random.randrange(0, 101),
+                'status': random.choices(['ACTIVE', 'DRAFT', 'PENDING_APPROVAL'], weights=[8, 1, 1])[0],
+            })
+            products.append(product)
+        products = list(Product.objects.all())
 
         # Create orders
         self.stdout.write('Creating orders...')
         orders = []
         statuses = ['PENDING', 'PAID', 'READY_FOR_DELIVERY', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED']
         
-        for i in range(50):  # Create 50 orders
+        orders_to_create = max(options['orders'] - Order.objects.count(), 0)
+        for i in range(orders_to_create):
             buyer = random.choice(buyers)
             status = random.choice(statuses)
             
@@ -178,20 +248,54 @@ class Command(BaseCommand):
             days_ago = random.randint(0, 60)
             created_at = timezone.now() - timedelta(days=days_ago)
             
-            # Random order total between 50 and 500 ZMW
-            total_amount = Decimal(str(random.uniform(50, 500))).quantize(Decimal('0.01'))
-            
             order = Order.objects.create(
                 buyer=buyer,
                 status=status,
-                total_amount=total_amount,
+                total_amount=Decimal('0.00'),
+                product_subtotal=Decimal('0.00'),
+                shipping_address=f'Plot {random.randrange(1, 999)}, Demo Road, Zambia',
                 created_at=created_at,
             )
+            selected_products = random.sample([p for p in products if p.status == 'ACTIVE'], k=random.randrange(1, 4))
+            subtotal = Decimal('0.00')
+            seller_ids = set()
+            for product in selected_products:
+                quantity = random.randrange(1, 4)
+                OrderItem.objects.create(order=order, product=product, seller=product.seller,
+                                         quantity=quantity, price_snapshot=product.price)
+                subtotal += product.price * quantity
+                seller_ids.add(product.seller_id)
+            order.product_subtotal = subtotal
+            order.total_amount = subtotal
             order.created_at = created_at
-            order.save()
+            order.save(update_fields=['product_subtotal', 'total_amount', 'created_at'])
+            fulfillment_status = {
+                'PENDING': 'AWAITING_ACCEPTANCE', 'PAID': 'ACCEPTED',
+                'READY_FOR_DELIVERY': 'READY_FOR_PICKUP', 'IN_TRANSIT': 'HANDED_OVER',
+                'DELIVERED': 'HANDED_OVER', 'CANCELLED': 'CANCELLED',
+            }[status]
+            for seller_id in seller_ids:
+                OrderFulfillment.objects.create(order=order, seller_id=seller_id, status=fulfillment_status,
+                                                fulfill_by=created_at + timedelta(days=2))
             orders.append(order)
+
+        # Backfill legacy demo orders that predate multi-seller line items.
+        active_products = [product for product in products if product.status == 'ACTIVE']
+        for order in Order.objects.filter(items__isnull=True):
+            product = random.choice(active_products)
+            quantity = random.randrange(1, 3)
+            OrderItem.objects.create(order=order, product=product, seller=product.seller,
+                                     quantity=quantity, price_snapshot=product.price)
+            subtotal = product.price * quantity
+            order.product_subtotal = subtotal
+            order.total_amount = subtotal
+            order.save(update_fields=['product_subtotal', 'total_amount'])
+            OrderFulfillment.objects.get_or_create(order=order, seller=product.seller, defaults={
+                'status': 'CANCELLED' if order.status == 'CANCELLED' else 'HANDED_OVER' if order.status in {'IN_TRANSIT', 'DELIVERED'} else 'ACCEPTED',
+                'fulfill_by': order.created_at + timedelta(days=2),
+            })
         
-        self.stdout.write(self.style.SUCCESS(f'✓ Created {len(orders)} orders'))
+        self.stdout.write(self.style.SUCCESS(f'Created {orders_to_create} orders; total is {Order.objects.count()}'))
 
         # Create reviews
         self.stdout.write('Creating reviews...')
@@ -228,7 +332,7 @@ class Command(BaseCommand):
             except Exception:
                 pass  # Skip if duplicate
         
-        self.stdout.write(self.style.SUCCESS(f'✓ Created {len(reviews)} reviews'))
+        self.stdout.write(self.style.SUCCESS(f'Created {len(reviews)} reviews'))
 
         # Create notifications
         self.stdout.write('Creating notifications...')
@@ -251,22 +355,21 @@ class Command(BaseCommand):
                 )
                 notifications.append(notif)
         
-        self.stdout.write(self.style.SUCCESS(f'✓ Created {len(notifications)} notifications'))
+        self.stdout.write(self.style.SUCCESS(f'Created {len(notifications)} notifications'))
 
         # Summary
         self.stdout.write(self.style.SUCCESS('\n' + '='*50))
-        self.stdout.write(self.style.SUCCESS('✅ SEEDING COMPLETE!'))
+        self.stdout.write(self.style.SUCCESS('SEEDING COMPLETE!'))
         self.stdout.write(self.style.SUCCESS('='*50))
-        self.stdout.write(f'📊 Categories: {Category.objects.count()}')
-        self.stdout.write(f'👥 Users: {User.objects.count()} (Buyers: {User.objects.filter(role="BUYER").count()}, Sellers: {User.objects.filter(role="SELLER").count()})')
-        self.stdout.write(f'🏪 Sellers: {Seller.objects.count()} (Verified: {Seller.objects.filter(verified=True).count()})')
-        self.stdout.write(f'📦 Products: {Product.objects.count()} (Active: {Product.objects.filter(status="ACTIVE").count()}, Pending: {Product.objects.filter(status="PENDING_APPROVAL").count()})')
-        self.stdout.write(f'🛒 Orders: {Order.objects.count()}')
-        self.stdout.write(f'⭐ Reviews: {Review.objects.count()}')
-        self.stdout.write(f'🔔 Notifications: {Notification.objects.count()}')
+        self.stdout.write(f'Categories: {Category.objects.count()}')
+        self.stdout.write(f'Users: {User.objects.count()} (Buyers: {User.objects.filter(role="BUYER").count()}, Sellers: {User.objects.filter(role="SELLER").count()})')
+        self.stdout.write(f'Sellers: {Seller.objects.count()} (Verified: {Seller.objects.filter(verified=True).count()})')
+        self.stdout.write(f'Products: {Product.objects.count()} (Active: {Product.objects.filter(status="ACTIVE").count()}, Pending: {Product.objects.filter(status="PENDING_APPROVAL").count()})')
+        self.stdout.write(f'Orders: {Order.objects.count()}')
+        self.stdout.write(f'Reviews: {Review.objects.count()}')
+        self.stdout.write(f'Notifications: {Notification.objects.count()}')
         self.stdout.write(self.style.SUCCESS('='*50))
         
-        self.stdout.write(self.style.WARNING('\n📝 Test Credentials:'))
+        self.stdout.write(self.style.WARNING('\nTest Credentials:'))
         self.stdout.write('  Buyer: john_buyer / buyer123')
         self.stdout.write('  Seller: techstore / seller123')
-        self.stdout.write('  Admin: Admin / 1234')
